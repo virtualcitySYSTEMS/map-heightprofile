@@ -1,6 +1,5 @@
 <template>
   <v-sheet>
-    {{ state }}
     <VcsFormSection heading="heightProfile.settings">
       <div class="px-2 pt-2 pb-1">
         <v-row no-gutters>
@@ -22,7 +21,6 @@
               :title="$t('heightProfile.tooltip.resolution')"
               show-spin-buttons
               v-model.number="resolution"
-              :disabled="!['created', 'synced', 'desynced'].includes(state)"
             />
           </v-col>
         </v-row>
@@ -36,8 +34,7 @@
             <VcsSelect
               id="vp-classification-type"
               :items="terrainselectvalues"
-              v-model="olcs_classificationType"
-              :disabled="!['created', 'synced', 'desynced'].includes(state)"
+              v-model="elevationType"
               dense
             />
           </v-col>
@@ -47,13 +44,7 @@
     <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
       <VcsFormButton
         variant="filled"
-        icon="$vcsRotateRight"
-        :disabled="!['desynced'].includes(state)"
-      >
-      </VcsFormButton>
-      <VcsFormButton
-        variant="filled"
-        :disabled="!['synced', 'created'].includes(state)"
+        :disabled="isCreateSession || isEditSession"
       >
         {{ $t('heightProfile.results') }}
       </VcsFormButton>
@@ -72,14 +63,11 @@
     </VcsFormSection>
 
     <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
-      <VcsFormButton
-        icon="$vcsComponentsPlus"
-        :disabled="!['created', 'synced', 'desynced'].includes(state)"
-      />
+      <VcsFormButton icon="$vcsComponentsPlus" :disabled="isCreateSession" />
       <VcsFormButton
         variant="filled"
         :id="action.name"
-        :disabled="!['created', 'synced', 'desynced'].includes(state)"
+        :disabled="isCreateSession"
         :tooltip="action.title"
         @click.stop="action.callback($event)"
       >
@@ -91,7 +79,11 @@
 <script lang="ts">
   import { defineComponent, inject, ref, onUnmounted, computed } from 'vue';
   import { VSheet, VRow, VCol } from 'vuetify/lib';
-  import { getFlatCoordinatesFromGeometry } from '@vcmap/core';
+  import {
+    SessionType,
+    getFlatCoordinatesFromGeometry,
+    CesiumMap,
+  } from '@vcmap/core';
   import {
     VcsDataTable,
     VcsFormSection,
@@ -102,7 +94,10 @@
     VcsTextField,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
-  import { HeightProfilFeatureProperties, createAction } from './setup.js';
+  import { LineString } from 'ol/geom';
+  import { Scene } from '@vcmap-cesium/engine';
+  import { HeightProfileResult, createAction, ElevationType } from './setup.js';
+  import { createHeightProfileCalculation } from './calculationHelper.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
 
@@ -130,22 +125,28 @@
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
 
+      let scene: Scene | undefined;
+      if (app.maps.activeMap instanceof CesiumMap) {
+        scene = app.maps.activeMap.getScene();
+      }
+      const isCreateSession = computed(
+        () => plugin.session.value?.type === SessionType.CREATE,
+      );
+      const isEditSession = computed(
+        () => plugin.session.value?.type === SessionType.EDIT_GEOMETRY,
+      );
       const points = ref();
+      const resolution = ref(0.5);
+      const elevationType = ref('both');
 
       const feature = plugin.layer.getFeatureById(props.featureId);
       if (!feature) {
         throw new Error('Feature not found');
       }
 
-      const featureProperties =
-        feature.getProperties() as HeightProfilFeatureProperties;
-      const state = ref(featureProperties.state);
-      const resolution = ref(featureProperties.resolution);
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      const olcs_classificationType = ref(
-        featureProperties.olcs_classificationType,
+      const results = ref<HeightProfileResult[]>(
+        (feature.get('results') as HeightProfileResult[] | undefined) ?? [],
       );
-
       const featureListenerGeometry = feature
         .getGeometry()
         ?.on('change', () => {
@@ -168,14 +169,8 @@
         });
 
       const featureListenerProperty = feature.on('propertychange', (event) => {
-        if (event.key === 'state') {
-          state.value = feature.get('state');
-        } else if (event.key === 'resolution') {
-          resolution.value = feature.get('resolution');
-        } else if (event.key === 'olcs_classificationType') {
-          olcs_classificationType.value = feature.get(
-            'olcs_classificationType',
-          );
+        if (event.key === 'results') {
+          results.value = feature.get('results') as HeightProfileResult[];
         }
       });
 
@@ -220,9 +215,8 @@
           name: 'editAction',
           icon: '$vcsEditVertices',
           title: 'heightProfile.edit',
-          disabled: computed(
-            () => !['created', 'synced', 'desynced'].includes(state.value),
-          ),
+          disabled: isCreateSession,
+          active: isEditSession,
           callback(): void {},
         },
       ]);
@@ -233,26 +227,17 @@
       });
 
       return {
+        createHeightProfileCalculation,
         headers,
         terrainselectvalues,
         points,
         action,
-        state,
+        isCreateSession,
+        isEditSession,
         editActions,
-        resolution: computed({
-          get: () => resolution.value,
-          set: (value) => {
-            if (value > 0) {
-              feature.set('resolution', value);
-            }
-          },
-        }),
-        olcs_classificationType: computed({
-          get: () => olcs_classificationType.value,
-          set: (value) => {
-            feature.set('olcs_classificationType', value);
-          },
-        }),
+        results,
+        resolution,
+        elevationType,
       };
     },
   });

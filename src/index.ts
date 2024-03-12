@@ -1,9 +1,15 @@
 import { VcsPlugin, VcsUiApp } from '@vcmap/ui';
-import { CreateFeatureSession, GeometryType, VectorLayer } from '@vcmap/core';
+import {
+  CreateFeatureSession,
+  EditGeometrySession,
+  GeometryType,
+  VectorLayer,
+} from '@vcmap/core';
 import { ShallowRef } from 'vue';
 import { name, version, mapVersion } from '../package.json';
 
 import {
+  HeightProfileSessionType,
   createHeightProfileLayer,
   createSessionReference,
   createToolboxButton,
@@ -14,18 +20,14 @@ type PluginState = Record<never, never>;
 
 export type HeightProfilePlugin = VcsPlugin<PluginConfig, PluginState> & {
   readonly layer: VectorLayer;
-  readonly session: ShallowRef<
-    CreateFeatureSession<GeometryType.LineString> | undefined
-  >;
+  readonly session: ShallowRef<HeightProfileSessionType>;
 };
 
 export default function plugin(): HeightProfilePlugin {
   let layer: VectorLayer | undefined;
   const destroyListeners: Array<() => void> = [];
 
-  let session:
-    | ShallowRef<CreateFeatureSession<GeometryType.LineString> | undefined>
-    | undefined;
+  let session: ShallowRef<HeightProfileSessionType> | undefined;
 
   return {
     get name(): string {
@@ -44,7 +46,9 @@ export default function plugin(): HeightProfilePlugin {
       return layer;
     },
     get session(): ShallowRef<
-      CreateFeatureSession<GeometryType.LineString> | undefined
+      | CreateFeatureSession<GeometryType.LineString>
+      | EditGeometrySession
+      | undefined
     > {
       if (!session) {
         throw new Error('Session not initialized');
@@ -96,7 +100,7 @@ export default function plugin(): HeightProfilePlugin {
           create: 'Create',
           classificationType: { DGM: 'DEM', DOM: 'DSM' },
           resolution: 'Resolution [m]',
-          results: 'Show Results',
+          results: 'Create Result',
           new: 'New',
           pointsMultiple: 'Ancor Points',
           points: 'Points',
@@ -118,7 +122,7 @@ export default function plugin(): HeightProfilePlugin {
           create: 'Erstellen',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },
           resolution: 'Auflösung [m]',
-          results: 'Ergebnisse anzeigen',
+          results: 'Ergebnis erstellen',
           new: 'Neu',
           pointsMultiple: 'Ankerpunkte',
           points: 'Punkte',

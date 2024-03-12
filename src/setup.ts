@@ -1,5 +1,6 @@
 import {
   CreateFeatureSession,
+  EditGeometrySession,
   GeometryType,
   SessionType,
   VectorLayer,
@@ -10,6 +11,7 @@ import {
 import { ToolboxType, VcsAction, VcsUiApp, WindowSlot } from '@vcmap/ui';
 import { ShallowRef, shallowRef, watch, nextTick, reactive } from 'vue';
 import Feature from 'ol/Feature.js';
+import { Coordinate } from 'ol/coordinate.js';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import HeightProfileEditorComponent, {
@@ -17,24 +19,45 @@ import HeightProfileEditorComponent, {
 } from './HeightProfileEditor.vue';
 import { name } from '../package.json';
 
-export type HeightProfilFeatureProperties = {
-  state: 'initzialized' | 'created' | 'processing' | 'synced' | 'desynced';
+export type ElevationType = 'both' | 'terrain';
+
+export type HeightProfileResult = {
   resolution: number;
-  olcs_classificationType: 'both' | 'terrain';
+  elevationType: ElevationType;
+  layerNames: string[];
+  resultPoints: Coordinate[];
 };
 
+export type HeightProfilFeatureProperties = {
+  results: HeightProfileResult[];
+};
+
+export type HeightProfileSessionType =
+  | CreateFeatureSession<GeometryType.LineString>
+  | EditGeometrySession
+  | undefined;
+
+function setEmptyResults(feature: Feature): void {
+  if (
+    ((feature.get('results') as HeightProfileResult[] | undefined)?.length ??
+      0) > 0
+  ) {
+    feature.set('results', []);
+  }
+}
+
 function createFeatureListeners(feature: Feature): () => void {
-  const changeHandler = (): void => {
-    if (feature.get('state') === 'synced') {
-      feature.set('state', 'desynced');
-    }
+  const geometryChangeHandler = (): void => {
+    setEmptyResults(feature);
   };
   let featureGeomListener: EventsKey | undefined;
   const setGeomListener = (): void => {
     if (featureGeomListener) {
       unByKey(featureGeomListener);
     }
-    featureGeomListener = feature.getGeometry()!.on('change', changeHandler);
+    featureGeomListener = feature
+      .getGeometry()
+      ?.on('change', geometryChangeHandler);
   };
   setGeomListener();
 
@@ -42,24 +65,12 @@ function createFeatureListeners(feature: Feature): () => void {
     'change:geometry',
     () => {
       setGeomListener();
-      changeHandler();
-    },
-  );
-  const featurePropertyChangedListener = feature.on(
-    'propertychange',
-    (event) => {
-      if (
-        event.key === 'resolution' ||
-        event.key === 'olcs_classificationType'
-      ) {
-        changeHandler();
-      }
+      geometryChangeHandler();
     },
   );
 
   const destroy = (): void => {
     unByKey(featureGeomListener!);
-    unByKey(featurePropertyChangedListener);
     unByKey(featureGeomChangedListener);
   };
   return destroy;
@@ -71,16 +82,7 @@ function createSourceListeners(layer: VectorLayer): () => void {
   const sourceChangeFeature = layer.source.on('addfeature', (event) => {
     const f = event.feature as Feature;
 
-    if (!f.getProperties().state) {
-      const properties = {
-        state: 'desynced',
-        resolution: 1,
-        olcs_classificationType: 'both',
-      };
-      f.setProperties(properties);
-    } else {
-      f.set('state', 'desynced');
-    }
+    setEmptyResults(f);
     featureListeners.set(f, createFeatureListeners(f));
   });
 
@@ -139,14 +141,12 @@ export function createSessionReference(app: VcsUiApp): {
     if (newSession) {
       newSession.creationFinished.addEventListener((feature) => {
         if (feature) {
-          feature.set('state', 'created');
           newSession?.stop();
         }
       });
 
       newSession.featureCreated.addEventListener((f) => {
         const featureId = f.getId();
-        f.set('state', 'initzialized');
         const contentComponent = {
           id: windowIdHeightProfile,
           component: HeightProfileEditorComponent,
@@ -180,7 +180,9 @@ export function createAction(
   app: VcsUiApp,
   layer: VectorLayer,
   session: ShallowRef<
-    CreateFeatureSession<GeometryType.LineString> | undefined
+    | CreateFeatureSession<GeometryType.LineString>
+    | EditGeometrySession
+    | undefined
   >,
 ): { action: VcsAction; destroy: () => void } {
   const action = reactive<VcsAction>({
@@ -213,9 +215,7 @@ export function createAction(
 export function createToolboxButton(
   app: VcsUiApp,
   layer: VectorLayer,
-  session: ShallowRef<
-    CreateFeatureSession<GeometryType.LineString> | undefined
-  >,
+  session: ShallowRef<HeightProfileSessionType>,
 ): () => void {
   const { action, destroy: destroyAction } = createAction(app, layer, session);
 

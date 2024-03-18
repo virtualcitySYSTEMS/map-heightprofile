@@ -88,12 +88,18 @@ export default function plugin(): HeightProfilePlugin {
     i18n: {
       en: {
         heightProfile: {
+          heightProfileCalculated: 'Height Profile Calculated',
+          heightProfileCanceled:
+            'Calculation of the heightprofile was canceled!',
           tooltip: {
             resolution:
               'The resolution defines the distance between the sampeling points of the height profile. The smaller the resolution, the more detailed the profile.',
           },
           header: {
             title: 'Height Profile',
+          },
+          collection: {
+            add: 'Create Height Profile',
           },
           edit: 'Edit',
           title: 'Height Profile',
@@ -106,16 +112,25 @@ export default function plugin(): HeightProfilePlugin {
           points: 'Points',
           settings: 'Profile Settings',
           classification: 'Classification Type',
+          calcResults: 'Height Profiles',
+          calc: 'Calculate',
+          cancel: 'Cancel',
+          dialogText: 'The Height Profile is beeing calculated.',
         },
       },
       de: {
         heightProfile: {
+          heightProfileCalculated: 'Höhenprofil berechnet',
+          heightProfileCanceled: 'Berechnung des Höhenprofiles abgebrochen!',
           tooltip: {
             resolution:
               'Die Auflösung definiert den Abstand zwischen den Abtastpunkten des Höhenprofils. Je kleiner die Auflösung ist, desto detaillierter ist das Profil.',
           },
           header: {
             title: 'Höhenprofil',
+          },
+          collection: {
+            add: 'Erstellen eines Höhenprofils',
           },
           edit: 'Bearbeiten',
           title: 'Höhenprofil',
@@ -128,6 +143,10 @@ export default function plugin(): HeightProfilePlugin {
           points: 'Punkte',
           settings: 'Profil Einstellungen',
           classification: 'Klassifikationstyp',
+          calcResults: 'Höhenprofile',
+          calc: 'Berechnen',
+          cancel: 'Abbrechen',
+          dialogText: 'Das Höhenprofil wird berechnet.',
         },
       },
     },

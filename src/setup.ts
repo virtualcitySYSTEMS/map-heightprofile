@@ -1,4 +1,5 @@
 import {
+  Collection,
   CreateFeatureSession,
   EditGeometrySession,
   GeometryType,
@@ -22,6 +23,10 @@ import { name } from '../package.json';
 export type ElevationType = 'both' | 'terrain';
 
 export type HeightProfileResult = {
+  name: string;
+  properties: {
+    title: string;
+  };
   resolution: number;
   elevationType: ElevationType;
   layerNames: string[];
@@ -37,18 +42,10 @@ export type HeightProfileSessionType =
   | EditGeometrySession
   | undefined;
 
-function setEmptyResults(feature: Feature): void {
-  if (
-    ((feature.get('results') as HeightProfileResult[] | undefined)?.length ??
-      0) > 0
-  ) {
-    feature.set('results', []);
-  }
-}
-
 function createFeatureListeners(feature: Feature): () => void {
   const geometryChangeHandler = (): void => {
-    setEmptyResults(feature);
+    const result = feature.get('results') as Collection<HeightProfileResult>;
+    result?.clear();
   };
   let featureGeomListener: EventsKey | undefined;
   const setGeomListener = (): void => {
@@ -82,7 +79,7 @@ function createSourceListeners(layer: VectorLayer): () => void {
   const sourceChangeFeature = layer.source.on('addfeature', (event) => {
     const f = event.feature as Feature;
 
-    setEmptyResults(f);
+    f.set('results', new Collection());
     featureListeners.set(f, createFeatureListeners(f));
   });
 

@@ -21,8 +21,8 @@ export class CancelledError extends Error {}
 type HeightProfileCalculation = {
   readonly progress: VcsEvent<number>;
   readonly totalNumberOfPoints: number;
-  cancel(): void;
-  readonly ready: Promise<Result<Coordinate[]>>; // Add missing type argument for Result
+  cancel(this: void): void;
+  readonly ready: Promise<Result<Coordinate[]>>;
   readonly resolutionValue: number;
 };
 
@@ -110,9 +110,9 @@ export function createHeightProfileCalculation(
   const positions = new Array(totalNumberOfPoints);
   let isCanceled = false;
 
-  const cancel = (): void => {
+  function cancel(this: void): void {
     isCanceled = true;
-  };
+  }
   const calculate = async (): Promise<Result<Coordinate[]>> => {
     for (let i = 0; i <= totalNumberOfPoints; i++) {
       if (isCanceled) {
@@ -120,6 +120,7 @@ export function createHeightProfileCalculation(
       }
 
       spline.evaluate(i, scratchCartesian);
+
       Cartographic.fromCartesian(
         scratchCartesian,
         undefined,
@@ -151,6 +152,7 @@ export function createHeightProfileCalculation(
 
   return {
     resolutionValue,
+
     progress,
     totalNumberOfPoints,
     cancel,

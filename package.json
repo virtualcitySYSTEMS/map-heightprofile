@@ -53,7 +53,7 @@
     "vuetify": "~2.6.7"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.6",
+    "@types/uuid": "^9.0.8",
     "@vcmap/plugin-cli": "^3.0.0",
     "@vcsuite/eslint-config": "^3.0.6",
     "@vitest/coverage-v8": "^1.2.2",
@@ -64,5 +64,8 @@
     "vitest": "^1.2.2",
     "vue-tsc": "^1.8.27"
   },
-  "mapVersion": "^5.1"
+  "mapVersion": "^5.1",
+  "dependencies": {
+    "uuid": "^9.0.1"
+  }
 }

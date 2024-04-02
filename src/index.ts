@@ -13,6 +13,7 @@ import {
   createHeightProfileLayer,
   createSessionReference,
   createToolboxButton,
+  createVectorLayer,
 } from './setup.js';
 
 type PluginConfig = Record<never, never>;
@@ -20,11 +21,13 @@ type PluginState = Record<never, never>;
 
 export type HeightProfilePlugin = VcsPlugin<PluginConfig, PluginState> & {
   readonly layer: VectorLayer;
+  readonly measurementLayer: VectorLayer;
   readonly session: ShallowRef<HeightProfileSessionType>;
 };
 
 export default function plugin(): HeightProfilePlugin {
   let layer: VectorLayer | undefined;
+  let measurementLayer: VectorLayer | undefined;
   const destroyListeners: Array<() => void> = [];
 
   let session: ShallowRef<HeightProfileSessionType> | undefined;
@@ -45,6 +48,12 @@ export default function plugin(): HeightProfilePlugin {
       }
       return layer;
     },
+    get measurementLayer(): VectorLayer {
+      if (!measurementLayer) {
+        throw new Error('Layer not initialized');
+      }
+      return measurementLayer;
+    },
     get session(): ShallowRef<
       | CreateFeatureSession<GeometryType.LineString>
       | EditGeometrySession
@@ -59,6 +68,9 @@ export default function plugin(): HeightProfilePlugin {
       const { destroy: destroyLayer, layer: layerHProfil } =
         await createHeightProfileLayer(vcsUiApp);
       layer = layerHProfil;
+      const { destroy: destroyMeasurementLayer, layer: layerMeasure } =
+        await createVectorLayer(vcsUiApp);
+      measurementLayer = layerMeasure;
       const { destroy: destroySessionWatcher, session: sessionWatched } =
         createSessionReference(vcsUiApp);
       session = sessionWatched;
@@ -69,6 +81,7 @@ export default function plugin(): HeightProfilePlugin {
         destroyLayer,
         destroySessionWatcher,
         destroyToolbox,
+        destroyMeasurementLayer,
       );
 
       return Promise.resolve();
@@ -110,12 +123,17 @@ export default function plugin(): HeightProfilePlugin {
           new: 'New',
           pointsMultiple: 'Ancor Points',
           points: 'Points',
+          point: 'Point',
           settings: 'Profile Settings',
           classification: 'Classification Type',
           calcResults: 'Height Profiles',
           calc: 'Calculate',
           cancel: 'Cancel',
           dialogText: 'The Height Profile is beeing calculated.',
+          graphAction: 'Show Graph',
+          measureLine: 'Measurement Line',
+          measurementWarning:
+            'A measurement line can only be created if no more than one height line is displayed in the graph.',
         },
       },
       de: {
@@ -141,12 +159,17 @@ export default function plugin(): HeightProfilePlugin {
           new: 'Neu',
           pointsMultiple: 'Ankerpunkte',
           points: 'Punkte',
+          point: 'Punkt',
           settings: 'Profil Einstellungen',
           classification: 'Klassifikationstyp',
           calcResults: 'Höhenprofile',
           calc: 'Berechnen',
           cancel: 'Abbrechen',
           dialogText: 'Das Höhenprofil wird berechnet.',
+          graphAction: 'Graph Anzeigen',
+          measureLine: 'Messlinie',
+          measurementWarning:
+            'Es kann nur eine Messlinie erstellt werden, wenn nicht mehr als eine Höhenlinie im Graph dargestellt wird.',
         },
       },
     },

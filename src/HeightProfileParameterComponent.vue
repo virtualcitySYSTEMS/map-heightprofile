@@ -85,7 +85,10 @@
     VcsSelect,
     VcsTextField,
     NotificationType,
+    CollectionComponentClass,
+    CollectionComponentListItem,
   } from '@vcmap/ui';
+
   import { Scene } from '@vcmap-cesium/engine';
   import { CesiumMap, Collection } from '@vcmap/core';
   import { LineString } from 'ol/geom.js';
@@ -133,6 +136,9 @@
       const collection = inject(
         'collection',
       ) as Collection<HeightProfileResult>;
+      const collectionComponent = inject(
+        'collectionComponent',
+      ) as CollectionComponentClass<HeightProfileResult>;
       const terrainselectvalues: Array<{ text: string; value: string }> = [
         {
           value: 'terrain',
@@ -151,13 +157,14 @@
       function calculateHeightProfile(): () => void {
         if (scene) {
           const geometry = feature?.getGeometry() as LineString;
-          const { ready, cancel, progress } = createHeightProfileCalculation(
-            geometry,
-            resolution.value,
-            elevationType.value as ElevationType,
-            1000,
-            scene,
-          );
+          const { ready, cancel, progress, resolutionValue } =
+            createHeightProfileCalculation(
+              geometry,
+              resolution.value,
+              elevationType.value as ElevationType,
+              1000,
+              scene,
+            );
           dialogVisible.value = true;
           progress.addEventListener((event) => {
             progressBar.value = event;
@@ -166,24 +173,29 @@
           ready
             .then((resultPoints) => {
               if (resultPoints.ok) {
-                collection.add({
-                  name: uuidv4(),
+                const collName = uuidv4();
+                const item: HeightProfileResult = {
+                  name: collName,
                   properties: {
-                    // app.vuei18n.t("heightprofile.heightprofile")
-
                     title: `${String(app.vueI18n.t('heightProfile.title'))}-${collection.size + 1}`,
                   },
-                  resolution: resolution.value,
+
+                  resolution: resolutionValue,
                   elevationType: elevationType.value,
                   layerNames: ['layer1', 'layer2'],
                   resultPoints: resultPoints.points,
-                });
+                };
+                collection.add(item);
                 app.windowManager.remove(windowIdSetParameter);
+
+                const listItem = collectionComponent.getListItemForItem(
+                  item,
+                ) as CollectionComponentListItem;
+                collectionComponent.selection.value = [listItem];
               } else if (!resultPoints.ok) {
                 if (resultPoints.error instanceof CancelledError) {
                   app.notifier.add({
                     type: NotificationType.WARNING,
-                    // calculation canceled i18n
                     message: String('heightProfile.heightProfileCanceled'),
                   });
                 } else {

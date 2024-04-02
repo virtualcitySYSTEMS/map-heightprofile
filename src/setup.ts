@@ -75,7 +75,7 @@ function createFeatureListeners(feature: Feature): () => void {
 
 function createSourceListeners(layer: VectorLayer): () => void {
   const featureListeners = new Map<Feature, () => void>();
-
+  // plugin.measurementLayer.removeAllFeatures() -- MeasurementLayer löschen
   const sourceChangeFeature = layer.source.on('addfeature', (event) => {
     const f = event.feature as Feature;
 
@@ -101,7 +101,7 @@ function createSourceListeners(layer: VectorLayer): () => void {
   return destroy;
 }
 
-export async function createHeightProfileLayer(
+export async function createVectorLayer(
   app: VcsUiApp,
 ): Promise<{ destroy: () => void; layer: VectorLayer }> {
   const layer = new VectorLayer({
@@ -114,14 +114,27 @@ export async function createHeightProfileLayer(
   markVolatile(layer);
   app.layers.add(layer);
   await layer.activate();
-  const destroyLayerListener = createSourceListeners(layer);
   const destroy = (): void => {
     layer.deactivate();
     app.layers.remove(layer);
     layer.destroy();
-    destroyLayerListener();
   };
   return { destroy, layer };
+}
+
+export async function createHeightProfileLayer(
+  app: VcsUiApp,
+): Promise<{ destroy: () => void; layer: VectorLayer }> {
+  const { destroy, layer } = await createVectorLayer(app);
+  const destroyLayerListener = createSourceListeners(layer);
+
+  return {
+    destroy: (): void => {
+      destroy();
+      destroyLayerListener();
+    },
+    layer,
+  };
 }
 
 export function createSessionReference(app: VcsUiApp): {

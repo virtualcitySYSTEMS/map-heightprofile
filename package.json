@@ -47,14 +47,17 @@
   "peerDependencies": {
     "@vcmap-cesium/engine": "^4.0.3",
     "@vcmap/core": "^5.1.1",
-    "@vcmap/ui": "^5.1.0",
+    "@vcmap/ui": "git+ssh://git@gitlab.virtualcitysystems.de/vcsuite/npm/vcmap/ui.git#main",
     "ol": "^7.5.2",
     "vue": "~2.7.3",
     "vuetify": "~2.6.7"
   },
+  "overrides": {
+    "@vcmap/ui": "git+ssh://git@gitlab.virtualcitysystems.de/vcsuite/npm/vcmap/ui.git#main"
+  },
   "devDependencies": {
     "@types/uuid": "^9.0.8",
-    "@vcmap/plugin-cli": "^3.0.0",
+    "@vcmap/plugin-cli": "^3.0.1",
     "@vcsuite/eslint-config": "^3.0.6",
     "@vitest/coverage-v8": "^1.2.2",
     "jest-canvas-mock": "^2.5.2",
@@ -66,6 +69,8 @@
   },
   "mapVersion": "^5.1",
   "dependencies": {
-    "uuid": "^9.0.1"
+    "apexcharts": "^3.47.0",
+    "uuid": "^9.0.1",
+    "vue-apexcharts": "^1.6.2"
   }
 }

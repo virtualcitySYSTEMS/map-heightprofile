@@ -14,11 +14,7 @@
         </vcs-data-table
       ></v-container>
     </VcsFormSection>
-    <HeightProfileCollection
-      :feature-id="featureId"
-      owner="Test"
-      :parent-id="windowIdHeightProfile"
-    />
+    <CollectionComponentStandalone> </CollectionComponentStandalone>
     <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
       <VcsFormButton icon="$vcsComponentsPlus" :disabled="isCreateSession" />
       <VcsFormButton
@@ -34,23 +30,218 @@
   </v-sheet>
 </template>
 <script lang="ts">
-  import { defineComponent, inject, ref, onUnmounted, computed } from 'vue';
+  import {
+    defineComponent,
+    inject,
+    ref,
+    onUnmounted,
+    computed,
+    provide,
+    watch,
+    nextTick,
+  } from 'vue';
   import { VSheet, VContainer } from 'vuetify/lib';
-  import { SessionType, getFlatCoordinatesFromGeometry } from '@vcmap/core';
+  import {
+    Collection,
+    SessionType,
+    getFlatCoordinatesFromGeometry,
+    // startEditGeometrySession,
+  } from '@vcmap/core';
   import {
     VcsDataTable,
     VcsFormSection,
     VcsFormButton,
     VcsUiApp,
+    CollectionComponentClass,
+    CollectionComponentStandalone,
+    WindowSlot,
+    VcsAction,
+    WindowComponentOptions,
+    CollectionComponentListItem,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
+  import Feature from 'ol/Feature.js';
   import { HeightProfileResult, createAction } from './setup.js';
   import { createHeightProfileCalculation } from './calculationHelper.js';
-  import HeightProfileCollection from './HeightProfileCollection.vue';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
+  import HeightProfileParameterComponent, {
+    windowIdSetParameter,
+  } from './HeightProfileParameterComponent.vue';
+  import GraphComponent from './GraphComponent.vue';
+  import { windowIdGraph } from './chart.js';
 
   export const windowIdHeightProfile = 'heightProfileEditor_window_id';
+
+  export function createGraphComponentOptions(
+    props: {
+      featureId: string;
+      resultNames: string[];
+    },
+    collection: Collection<HeightProfileResult>,
+  ): WindowComponentOptions {
+    return {
+      id: windowIdGraph,
+      parentId: windowIdHeightProfile,
+      component: GraphComponent,
+      slot: WindowSlot.DYNAMIC_CHILD,
+      position: {
+        left: '35%',
+        right: '35%',
+        top: '10%',
+      },
+      state: {
+        headerTitle: 'heightProfile.title',
+      },
+      props,
+      provides: {
+        collection,
+      },
+    };
+  }
+
+  function createAddHeightProfileAction(
+    contentComponent: WindowComponentOptions,
+    app: VcsUiApp,
+  ): VcsAction {
+    return {
+      name: 'heightProfile.collection.add',
+      title: 'heightProfile.collection.add',
+      icon: '$vcsPlus',
+      callback(): void {
+        app.windowManager.add(contentComponent, name);
+      },
+    };
+  }
+
+  function setupCollectionComponent(
+    app: VcsUiApp,
+    feature: Feature,
+    featureId: string,
+  ): {
+    destroy: () => void;
+    collectionComponent: CollectionComponentClass<HeightProfileResult>;
+  } {
+    const collection = feature.get(
+      'results',
+    ) as Collection<HeightProfileResult>;
+
+    const collectionComponent: CollectionComponentClass<HeightProfileResult> =
+      new CollectionComponentClass(
+        {
+          id: 'heightProfileCollection',
+          title: 'heightProfile.calcResults',
+          draggable: false,
+          renamable: true,
+          removable: true,
+          selectable: true,
+          collection,
+        },
+        name,
+      );
+
+    const contentComponent = {
+      id: windowIdSetParameter,
+      parentId: windowIdHeightProfile,
+      component: HeightProfileParameterComponent,
+      slot: WindowSlot.DYNAMIC_CHILD,
+      state: {
+        headerTitle: 'heightProfile.title',
+      },
+      props: {
+        featureId,
+      },
+      provides: {
+        collection,
+        collectionComponent,
+      },
+    };
+
+    const addAnchorAction = createAddHeightProfileAction(contentComponent, app);
+
+    collectionComponent.addActions([
+      {
+        action: addAnchorAction,
+        owner: name,
+      },
+    ]);
+
+    function showGraphAction(
+      item: HeightProfileResult,
+      listItem: CollectionComponentListItem,
+    ): VcsAction {
+      return {
+        name: 'heightProfile.graphAction',
+        title: 'heightProfile.graphAction',
+        callback(): void {
+          const props = {
+            featureId,
+            resultNames: [item.name],
+          };
+          if (!app.windowManager.has(windowIdGraph)) {
+            app.windowManager.add(
+              createGraphComponentOptions(props, collection),
+              name,
+            );
+          }
+          if (
+            !collectionComponent.selection.value.find(
+              (l) => l.name === listItem.name,
+            )
+          ) {
+            collectionComponent.selection.value = [
+              listItem,
+              ...collectionComponent.selection.value,
+            ];
+          }
+        },
+      };
+    }
+
+    collectionComponent.addItemMapping({
+      mappingFunction: (item, _c, listItem) => {
+        listItem.actions = [
+          ...listItem.actions,
+          showGraphAction(item, listItem),
+        ];
+      },
+      owner: name,
+    });
+
+    const selectionWatcher = watch(
+      collectionComponent.selection,
+      async (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          const names = [];
+          for (const item of newValue) {
+            names.push(item.name);
+          }
+          app.windowManager.remove(windowIdGraph);
+
+          const props = {
+            featureId,
+            resultNames: names,
+          };
+          await nextTick();
+          if (names.length > 0) {
+            app.windowManager.add(
+              createGraphComponentOptions(props, collection),
+              name,
+            );
+          }
+        }
+      },
+    );
+
+    return {
+      destroy: (): void => {
+        selectionWatcher();
+        collectionComponent.destroy();
+      },
+      collectionComponent,
+    };
+  }
+
   export default defineComponent({
     name: 'HeightProfileEditorComponent',
     components: {
@@ -59,7 +250,7 @@
       VcsDataTable,
       VcsFormButton,
       VContainer,
-      HeightProfileCollection,
+      CollectionComponentStandalone,
     },
     props: {
       featureId: {
@@ -83,6 +274,10 @@
         throw new Error('Feature not found');
       }
 
+      const { collectionComponent, destroy: destroyCollectionComponent } =
+        setupCollectionComponent(app, feature, props.featureId);
+
+      provide('collectionComponent', collectionComponent);
       const results = ref<HeightProfileResult[]>(
         (feature.get('results') as HeightProfileResult[] | undefined) ?? [],
       );
@@ -153,6 +348,7 @@
         unByKey(featureListenerGeometry!);
         unByKey(featureListenerProperty);
         destroy();
+        destroyCollectionComponent();
       });
 
       return {

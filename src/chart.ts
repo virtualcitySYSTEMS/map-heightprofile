@@ -28,7 +28,7 @@ type ApexChartContext = {
   ) => void;
   clearAnnotations: () => void;
 };
-
+const measureColor = '#FF0000';
 function addChartMeasurementFeature(
   plugin: HeightProfilePlugin,
   points: Array<[number, number]>,
@@ -73,7 +73,7 @@ function addChartMeasurementFeature(
   });
   const style: Style = new Style({
     stroke: new Stroke({
-      color: '#FF0000',
+      color: measureColor,
       width: 5,
     }),
   });
@@ -120,10 +120,10 @@ function createPointAnnotation(
     x,
     y,
     label: {
-      borderColor: '#ff0000',
+      borderColor: measureColor,
       style: {
         color: '#fff',
-        background: '#ff0000',
+        background: measureColor,
       },
       text,
     },
@@ -154,7 +154,7 @@ function addTriangleToChartContext(
     name: `${String(app.vueI18n.t('heightProfile.measureLine'))}`,
     id: 'measurements',
     data: points,
-    color: '#ff0000',
+    color: measureColor,
     zIndex: 99,
   };
   series.push(seriesElement);
@@ -234,9 +234,9 @@ function startChartMeasurement(
     },
     destroy(): void {
       finished = true;
-      chartContext.clearAnnotations();
       destroy();
       destroyMeasurementLayer();
+      chartContext?.clearAnnotations();
     },
   };
 
@@ -391,8 +391,8 @@ export function setupChart(
     series,
     chartOptions,
     destroy(): void {
-      currentMeasurment?.destroy();
       plugin.measurementLayer.removeAllFeatures();
+      currentMeasurment?.destroy();
     },
   };
 }

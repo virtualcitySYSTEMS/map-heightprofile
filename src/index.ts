@@ -1,4 +1,4 @@
-import { VcsPlugin, VcsUiApp } from '@vcmap/ui';
+import { EditorCollectionComponentClass, VcsPlugin, VcsUiApp } from '@vcmap/ui';
 import {
   CreateFeatureSession,
   EditGeometrySession,
@@ -10,11 +10,14 @@ import { name, version, mapVersion } from '../package.json';
 
 import {
   HeightProfileSessionType,
+  createCategory,
   createHeightProfileLayer,
   createSessionReference,
   createToolboxButton,
   createVectorLayer,
+  HeightProfileItem,
 } from './setup.js';
+import { createContextMenu } from './contextMenu.js';
 
 type PluginConfig = Record<never, never>;
 type PluginState = Record<never, never>;
@@ -22,12 +25,16 @@ type PluginState = Record<never, never>;
 export type HeightProfilePlugin = VcsPlugin<PluginConfig, PluginState> & {
   readonly layer: VectorLayer;
   readonly measurementLayer: VectorLayer;
+  readonly heightProfileCategory: EditorCollectionComponentClass<HeightProfileItem>;
   readonly session: ShallowRef<HeightProfileSessionType>;
 };
 
 export default function plugin(): HeightProfilePlugin {
   let layer: VectorLayer | undefined;
   let measurementLayer: VectorLayer | undefined;
+  let heightProfileCategory:
+    | EditorCollectionComponentClass<HeightProfileItem>
+    | undefined;
   const destroyListeners: Array<() => void> = [];
 
   let session: ShallowRef<HeightProfileSessionType> | undefined;
@@ -54,6 +61,12 @@ export default function plugin(): HeightProfilePlugin {
       }
       return measurementLayer;
     },
+    get heightProfileCategory(): EditorCollectionComponentClass<HeightProfileItem> {
+      if (!heightProfileCategory) {
+        throw new Error('Height Profile Category not initialized');
+      }
+      return heightProfileCategory;
+    },
     get session(): ShallowRef<
       | CreateFeatureSession<GeometryType.LineString>
       | EditGeometrySession
@@ -68,16 +81,32 @@ export default function plugin(): HeightProfilePlugin {
       const { destroy: destroyLayer, layer: layerHProfil } =
         await createHeightProfileLayer(vcsUiApp);
       layer = layerHProfil;
+
+      const {
+        editorCollection: heightProfileCategoryVar,
+        workbenchSelectionWatcher: destroySelectionWatcher,
+      } = await createCategory(vcsUiApp, this);
+      heightProfileCategory = heightProfileCategoryVar;
+
       const { destroy: destroyMeasurementLayer, layer: layerMeasure } =
         await createVectorLayer(vcsUiApp);
       measurementLayer = layerMeasure;
       const { destroy: destroySessionWatcher, session: sessionWatched } =
-        createSessionReference(vcsUiApp);
+        createSessionReference(vcsUiApp, heightProfileCategory);
       session = sessionWatched;
 
-      const destroyToolbox = createToolboxButton(vcsUiApp, layer, session);
+      const destroyToolbox = createToolboxButton(
+        vcsUiApp,
+        layer,
+        session,
+        heightProfileCategory,
+      );
+
+      const contextMenuDestroy = createContextMenu(vcsUiApp, this, name);
 
       destroyListeners.push(
+        destroySelectionWatcher,
+        contextMenuDestroy,
         destroyLayer,
         destroySessionWatcher,
         destroyToolbox,
@@ -101,12 +130,13 @@ export default function plugin(): HeightProfilePlugin {
     i18n: {
       en: {
         heightProfile: {
+          titleTemporary: 'Height Profile',
           heightProfileCalculated: 'Height Profile Calculated',
           heightProfileCanceled:
-            'Calculation of the heightprofile was canceled!',
+            'Calculation of the height profile was canceled!',
           tooltip: {
             resolution:
-              'The resolution defines the distance between the sampeling points of the height profile. The smaller the resolution, the more detailed the profile.',
+              'The resolution defines the distance between the sampling points of the height profile. The smaller the resolution, the more detailed the profile.',
           },
           header: {
             title: 'Height Profile',
@@ -115,13 +145,14 @@ export default function plugin(): HeightProfilePlugin {
             add: 'Create Height Profile',
           },
           edit: 'Edit',
+          delete: 'Delete',
           title: 'Height Profile',
           create: 'Create',
           classificationType: { DGM: 'DEM', DOM: 'DSM' },
           resolution: 'Resolution [m]',
           results: 'Create Result',
           new: 'New',
-          pointsMultiple: 'Ancor Points',
+          pointsMultiple: 'Anchor Points',
           points: 'Points',
           point: 'Point',
           settings: 'Profile Settings',
@@ -129,15 +160,18 @@ export default function plugin(): HeightProfilePlugin {
           calcResults: 'Height Profiles',
           calc: 'Calculate',
           cancel: 'Cancel',
-          dialogText: 'The Height Profile is beeing calculated.',
+          dialogText: 'The Height Profile is being calculated.',
           graphAction: 'Show Graph',
           measureLine: 'Measurement Line',
           measurementWarning:
             'A measurement line can only be created if no more than one height line is displayed in the graph.',
+          editSessionWarning:
+            'Subsequent modification of the geometry deletes all previously calculated profiles.',
         },
       },
       de: {
         heightProfile: {
+          titleTemporary: 'Höhenprofil',
           heightProfileCalculated: 'Höhenprofil berechnet',
           heightProfileCanceled: 'Berechnung des Höhenprofiles abgebrochen!',
           tooltip: {
@@ -151,6 +185,7 @@ export default function plugin(): HeightProfilePlugin {
             add: 'Erstellen eines Höhenprofils',
           },
           edit: 'Bearbeiten',
+          delete: 'Löschen',
           title: 'Höhenprofil',
           create: 'Erstellen',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },
@@ -170,6 +205,8 @@ export default function plugin(): HeightProfilePlugin {
           measureLine: 'Messlinie',
           measurementWarning:
             'Es kann nur eine Messlinie erstellt werden, wenn nicht mehr als eine Höhenlinie im Graph dargestellt wird.',
+          editSessionWarning:
+            'Die nachträgliche Veränderung der Geometry löscht alle bisher berechneten Profile.',
         },
       },
     },

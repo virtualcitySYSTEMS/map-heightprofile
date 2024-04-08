@@ -16,7 +16,11 @@
     </VcsFormSection>
     <CollectionComponentStandalone> </CollectionComponentStandalone>
     <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
-      <VcsFormButton icon="$vcsComponentsPlus" :disabled="isCreateSession" />
+      <VcsFormButton
+        icon="$vcsComponentsPlus"
+        :disabled="isCreateSession || currentIsPersisted"
+        @click="addToWorkspace()"
+      />
       <VcsFormButton
         variant="filled"
         :id="action.name"
@@ -45,7 +49,9 @@
     Collection,
     SessionType,
     getFlatCoordinatesFromGeometry,
-    // startEditGeometrySession,
+    getDefaultProjection,
+    Projection,
+    mercatorProjection,
   } from '@vcmap/core';
   import {
     VcsDataTable,
@@ -61,17 +67,19 @@
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
   import Feature from 'ol/Feature.js';
-  import { HeightProfileResult, createAction } from './setup.js';
-  import { createHeightProfileCalculation } from './calculationHelper.js';
+  import {
+    HeightProfileResult,
+    createCreateAction,
+    getHeightProfileEditorId,
+    createEditAction,
+  } from './setup.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
   import HeightProfileParameterComponent, {
     windowIdSetParameter,
   } from './HeightProfileParameterComponent.vue';
-  import GraphComponent from './GraphComponent.vue';
   import { windowIdGraph } from './chart.js';
-
-  export const windowIdHeightProfile = 'heightProfileEditor_window_id';
+  import GraphComponent from './GraphComponent.vue';
 
   export function createGraphComponentOptions(
     props: {
@@ -79,10 +87,11 @@
       resultNames: string[];
     },
     collection: Collection<HeightProfileResult>,
+    parentId: string,
   ): WindowComponentOptions {
     return {
       id: windowIdGraph,
-      parentId: windowIdHeightProfile,
+      parentId,
       component: GraphComponent,
       slot: WindowSlot.DYNAMIC_CHILD,
       position: {
@@ -99,7 +108,6 @@
       },
     };
   }
-
   function createAddHeightProfileAction(
     contentComponent: WindowComponentOptions,
     app: VcsUiApp,
@@ -122,6 +130,10 @@
     destroy: () => void;
     collectionComponent: CollectionComponentClass<HeightProfileResult>;
   } {
+    const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
+    const windowIdHeightProfile = getHeightProfileEditorId(
+      plugin.heightProfileCategory,
+    );
     const collection = feature.get(
       'results',
     ) as Collection<HeightProfileResult>;
@@ -180,7 +192,11 @@
           };
           if (!app.windowManager.has(windowIdGraph)) {
             app.windowManager.add(
-              createGraphComponentOptions(props, collection),
+              createGraphComponentOptions(
+                props,
+                collection,
+                windowIdHeightProfile,
+              ),
               name,
             );
           }
@@ -225,7 +241,11 @@
           await nextTick();
           if (names.length > 0) {
             app.windowManager.add(
-              createGraphComponentOptions(props, collection),
+              createGraphComponentOptions(
+                props,
+                collection,
+                windowIdHeightProfile,
+              ),
               name,
             );
           }
@@ -268,19 +288,61 @@
         () => plugin.session.value?.type === SessionType.EDIT_GEOMETRY,
       );
       const points = ref();
-
-      const feature = plugin.layer.getFeatureById(props.featureId);
+      const feature =
+        plugin.layer.getFeatureById(props.featureId) ||
+        plugin.heightProfileCategory.collection.getByKey(props.featureId)
+          ?.feature;
       if (!feature) {
         throw new Error('Feature not found');
       }
+      const currentIsPersisted = ref(
+        plugin.heightProfileCategory.collection.hasKey(props.featureId),
+      );
+
+      if (feature.getGeometry()) {
+        const coords = getFlatCoordinatesFromGeometry(feature.getGeometry()!);
+        const positions = [];
+        for (const coord of coords) {
+          if (coord) {
+            const coordP = Projection.transform(
+              getDefaultProjection(),
+              mercatorProjection,
+              coord,
+            );
+            positions.push({
+              id: `Punkt ${positions.length + 1}`,
+              name: undefined,
+              x: coordP[0].toFixed(2),
+              y: coordP[1].toFixed(2),
+            });
+          }
+        }
+        points.value = positions;
+      }
+
+      function addToWorkspace(): void {
+        if (feature) {
+          plugin.heightProfileCategory.collection.add({
+            name: feature.getId() as string,
+            feature,
+          });
+        }
+      }
+
+      const workspaceAddedListener =
+        plugin.heightProfileCategory.collection.added.addEventListener(
+          (item) => {
+            if (feature === item.feature) {
+              currentIsPersisted.value = true;
+            }
+          },
+        );
 
       const { collectionComponent, destroy: destroyCollectionComponent } =
         setupCollectionComponent(app, feature, props.featureId);
 
       provide('collectionComponent', collectionComponent);
-      const results = ref<HeightProfileResult[]>(
-        (feature.get('results') as HeightProfileResult[] | undefined) ?? [],
-      );
+
       const featureListenerGeometry = feature
         .getGeometry()
         ?.on('change', () => {
@@ -289,12 +351,16 @@
           const positions = [];
           for (const coord of coords) {
             if (coord) {
+              const coordP = Projection.transform(
+                getDefaultProjection(),
+                mercatorProjection,
+                coord,
+              );
               positions.push({
                 id: `Punkt ${positions.length + 1}`,
                 name: undefined,
-                x: coord[0].toFixed(2),
-                y: coord[1].toFixed(2),
-                z: coord[2].toFixed(2),
+                x: coordP[0].toFixed(2),
+                y: coordP[1].toFixed(2),
               });
             }
           }
@@ -302,16 +368,11 @@
           points.value = positions;
         });
 
-      const featureListenerProperty = feature.on('propertychange', (event) => {
-        if (event.key === 'results') {
-          results.value = feature.get('results') as HeightProfileResult[];
-        }
-      });
-
-      const { action, destroy } = createAction(
+      const { action, destroy } = createCreateAction(
         app,
         plugin.layer,
         plugin.session,
+        plugin.heightProfileCategory,
       );
 
       const headers: Array<{ text: string; value: string }> = [
@@ -327,39 +388,29 @@
           text: 'Y',
           value: 'y',
         },
-        {
-          text: 'Z',
-          value: 'z',
-        },
       ];
 
-      const editActions = ref([
-        {
-          name: 'editAction',
-          icon: '$vcsEditVertices',
-          title: 'heightProfile.edit',
-          disabled: isCreateSession,
-          active: isEditSession,
-          callback(): void {},
-        },
-      ]);
+      const { action: editAction, destroy: destroyEditAction } =
+        createEditAction(app, feature, plugin);
+      const editActions = ref([editAction]);
 
       onUnmounted(() => {
         unByKey(featureListenerGeometry!);
-        unByKey(featureListenerProperty);
+        workspaceAddedListener();
+        destroyEditAction();
         destroy();
         destroyCollectionComponent();
       });
 
       return {
-        createHeightProfileCalculation,
+        addToWorkspace,
         headers,
         points,
         action,
         isCreateSession,
         isEditSession,
+        currentIsPersisted,
         editActions,
-        windowIdHeightProfile,
       };
     },
   });

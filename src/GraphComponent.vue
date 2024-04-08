@@ -62,6 +62,7 @@
       );
 
       onUnmounted(() => {
+        // plugin.measurementLayer.removeAllFeatures();
         destroy();
       });
 

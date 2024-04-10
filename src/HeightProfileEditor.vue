@@ -66,13 +66,17 @@
     CollectionComponentListItem,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
-  import Feature from 'ol/Feature.js';
   import {
     HeightProfileResult,
     createCreateAction,
     getHeightProfileEditorId,
     createEditAction,
   } from './setup.js';
+  import {
+    resultCollectionSymbol,
+    type HeightProfileFeature,
+    resultCollectionComponentSymbol,
+  } from './heightProfileFeature.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
   import HeightProfileParameterComponent, {
@@ -124,7 +128,7 @@
 
   function setupCollectionComponent(
     app: VcsUiApp,
-    feature: Feature,
+    feature: HeightProfileFeature,
     featureId: string,
   ): {
     destroy: () => void;
@@ -134,23 +138,9 @@
     const windowIdHeightProfile = getHeightProfileEditorId(
       plugin.heightProfileCategory,
     );
-    const collection = feature.get(
-      'results',
-    ) as Collection<HeightProfileResult>;
+    const collection = feature[resultCollectionSymbol];
 
-    const collectionComponent: CollectionComponentClass<HeightProfileResult> =
-      new CollectionComponentClass(
-        {
-          id: 'heightProfileCollection',
-          title: 'heightProfile.calcResults',
-          draggable: false,
-          renamable: true,
-          removable: true,
-          selectable: true,
-          collection,
-        },
-        name,
-      );
+    const collectionComponent = feature[resultCollectionComponentSymbol];
 
     const contentComponent = {
       id: windowIdSetParameter,
@@ -290,8 +280,8 @@
       const points = ref();
       const feature =
         plugin.layer.getFeatureById(props.featureId) ||
-        plugin.heightProfileCategory.collection.getByKey(props.featureId)
-          ?.feature;
+        (plugin.heightProfileCategory.collection.getByKey(props.featureId)
+          ?.feature as HeightProfileFeature);
       if (!feature) {
         throw new Error('Feature not found');
       }
@@ -339,7 +329,11 @@
         );
 
       const { collectionComponent, destroy: destroyCollectionComponent } =
-        setupCollectionComponent(app, feature, props.featureId);
+        setupCollectionComponent(
+          app,
+          feature as HeightProfileFeature,
+          props.featureId,
+        );
 
       provide('collectionComponent', collectionComponent);
 

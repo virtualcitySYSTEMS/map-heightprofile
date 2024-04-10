@@ -13,6 +13,7 @@ import {
 } from '@vcmap/core';
 import {
   CollectionComponentListItem,
+  CollectionComponentClass,
   EditorCollectionComponentClass,
   makeEditorCollectionComponentClass,
   NotificationType,
@@ -30,7 +31,17 @@ import { Geometry } from 'ol/geom';
 import { Style } from 'ol/style';
 import type { HeightProfilePlugin } from './index.js';
 import HeightProfileEditorComponent from './HeightProfileEditor.vue';
+import HeightProfileWrapper from './CreateProfileFeatureWrapper.vue';
 import { name } from '../package.json';
+import HeightProfileParameterComponent, {
+  windowIdSetParameter,
+} from './HeightProfileParameterComponent.vue';
+import {
+  HeightProfileFeature,
+  resultCollectionSymbol,
+  resultCollectionComponentSymbol,
+  isHeightProfileFeature,
+} from './heightProfileFeature.js';
 
 export type ElevationType = 'both' | 'terrain';
 
@@ -61,7 +72,9 @@ export function addHeightProfileEditorComponent(
       featureId,
     },
   };
-  app.windowManager.add(contentComponent, name);
+  if (!app.windowManager.has(windowIdHeightProfile)) {
+    app.windowManager.add(contentComponent, name);
+  }
 }
 export function getHeightProfileEditorId(
   heightProfileCategory: EditorCollectionComponentClass<HeightProfileItem>,
@@ -74,9 +87,9 @@ export type HeightProfileSessionType =
   | EditGeometrySession
   | undefined;
 
-function createFeatureListeners(feature: Feature): () => void {
+function createFeatureListeners(feature: HeightProfileFeature): () => void {
   const geometryChangeHandler = (): void => {
-    const result = feature.get('results') as Collection<HeightProfileResult>;
+    const result = feature[resultCollectionSymbol];
     result?.clear();
   };
   let featureGeomListener: EventsKey | undefined;
@@ -107,9 +120,21 @@ function createFeatureListeners(feature: Feature): () => void {
 function createSourceListeners(layer: VectorLayer): () => void {
   const featureListeners = new Map<Feature, () => void>();
   const sourceChangeFeature = layer.source.on('addfeature', (event) => {
-    const f = event.feature as Feature;
+    const f = event.feature as HeightProfileFeature;
 
-    f.set('results', new Collection());
+    f[resultCollectionSymbol] = new Collection();
+    f[resultCollectionComponentSymbol] = new CollectionComponentClass(
+      {
+        id: 'heightProfileCollection',
+        title: 'heightProfile.calcResults',
+        draggable: false,
+        renamable: true,
+        removable: true,
+        selectable: true,
+        collection: f[resultCollectionSymbol],
+      },
+      name,
+    );
     featureListeners.set(f, createFeatureListeners(f));
   });
 
@@ -196,8 +221,30 @@ export function createSessionReference(
       if (newSession) {
         if (newSession.type === SessionType.CREATE) {
           newSession.creationFinished.addEventListener((feature) => {
-            if (feature) {
+            if (isHeightProfileFeature(feature)) {
               newSession?.stop();
+
+              const collection = feature[resultCollectionSymbol];
+
+              const collectionComponent =
+                feature[resultCollectionComponentSymbol];
+              const contentComponent = {
+                id: windowIdSetParameter,
+                parentId: windowIdHeightProfile,
+                component: HeightProfileParameterComponent,
+                slot: WindowSlot.DYNAMIC_CHILD,
+                state: {
+                  headerTitle: 'heightProfile.title',
+                },
+                props: {
+                  featureId: feature.getId(),
+                },
+                provides: {
+                  collection,
+                  collectionComponent,
+                },
+              };
+              app.windowManager.add(contentComponent, name);
             }
           });
           newSession.featureCreated.addEventListener((f) => {
@@ -273,7 +320,7 @@ export function createCreateAction(
     title: 'heightProfile.create',
     icon: '$vcsElevationProfile',
     active: false,
-    callback(): void {
+    async callback(): Promise<void> {
       if (session.value?.type === SessionType.CREATE) {
         session.value?.stop();
       } else {
@@ -294,6 +341,16 @@ export function createCreateAction(
           layer,
           GeometryType.LineString,
         );
+        const contentComponent = {
+          id: windowIdHeightProfile,
+          component: HeightProfileWrapper,
+          slot: WindowSlot.DYNAMIC_LEFT,
+          state: {
+            headerTitle: 'heightProfile.title',
+          },
+        };
+        await nextTick();
+        app.windowManager.add(contentComponent, name);
       }
     },
   });

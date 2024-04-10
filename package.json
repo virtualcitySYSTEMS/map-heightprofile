@@ -69,6 +69,7 @@
   },
   "mapVersion": "^5.1",
   "dependencies": {
+    "@vcsuite/logger": "^1.0.1",
     "apexcharts": "^3.47.0",
     "uuid": "^9.0.1",
     "vue-apexcharts": "^1.6.2"

@@ -167,6 +167,8 @@ export default function plugin(): HeightProfilePlugin {
             'A measurement line can only be created if no more than one height line is displayed in the graph.',
           editSessionWarning:
             'Subsequent modification of the geometry deletes all previously calculated profiles.',
+          initialMessage:
+            'Click the map to define the line of your profile. Double click a location to end your line.',
         },
       },
       de: {
@@ -207,6 +209,8 @@ export default function plugin(): HeightProfilePlugin {
             'Es kann nur eine Messlinie erstellt werden, wenn nicht mehr als eine Höhenlinie im Graph dargestellt wird.',
           editSessionWarning:
             'Die nachträgliche Veränderung der Geometry löscht alle bisher berechneten Profile.',
+          initialMessage:
+            'Klicken Sie auf die Karte, um die Linie Ihres Profils zu definieren. Doppelklicken Sie auf eine Stelle, um Ihre Linie zu beenden.',
         },
       },
     },

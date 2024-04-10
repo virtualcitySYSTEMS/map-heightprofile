@@ -23,9 +23,11 @@
   import { VcsFormSection, VcsUiApp } from '@vcmap/ui';
   import VueApexCharts from 'vue-apexcharts';
   import { HeightProfilePlugin } from 'src';
-  import { Collection } from '@vcmap/core';
   import { name } from '../package.json';
-  import { HeightProfileResult } from './setup.js';
+  import {
+    HeightProfileFeature,
+    resultCollectionSymbol,
+  } from './heightProfileFeature.js';
   import { setupChart } from './chart.js';
 
   export default defineComponent({
@@ -50,10 +52,10 @@
     setup(props) {
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
-      const feature = plugin.layer.getFeatureById(props.featureId);
-      const results = feature?.get(
-        'results',
-      ) as Collection<HeightProfileResult>;
+      const feature = plugin.layer.getFeatureById(
+        props.featureId,
+      ) as HeightProfileFeature;
+      const results = feature[resultCollectionSymbol];
 
       const { series, chartOptions, destroy } = setupChart(
         app,
@@ -62,7 +64,6 @@
       );
 
       onUnmounted(() => {
-        // plugin.measurementLayer.removeAllFeatures();
         destroy();
       });
 

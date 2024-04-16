@@ -21,13 +21,14 @@ import {
   VcsAction,
   VcsUiApp,
   WindowSlot,
+  WindowComponentOptions,
 } from '@vcmap/ui';
 import { nextTick, reactive, ShallowRef, shallowRef, watch } from 'vue';
 import Feature from 'ol/Feature.js';
 import { Coordinate } from 'ol/coordinate.js';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
-import { Geometry } from 'ol/geom';
+import { Geometry, LineString } from 'ol/geom';
 import { Style } from 'ol/style';
 import type { HeightProfilePlugin } from './index.js';
 import HeightProfileEditorComponent from './HeightProfileEditor.vue';
@@ -42,6 +43,8 @@ import {
   resultCollectionComponentSymbol,
   isHeightProfileFeature,
 } from './heightProfileFeature.js';
+import { windowIdGraph } from './chart.js';
+import GraphComponent from './GraphComponent.vue';
 
 export type ElevationType = 'both' | 'terrain';
 
@@ -66,7 +69,7 @@ export function addHeightProfileEditorComponent(
     component: HeightProfileEditorComponent,
     slot: WindowSlot.DYNAMIC_LEFT,
     state: {
-      headerTitle: 'heightProfile.title',
+      headerTitle: 'heightProfile.tempTitle',
     },
     props: {
       featureId,
@@ -116,26 +119,203 @@ function createFeatureListeners(feature: HeightProfileFeature): () => void {
     unByKey(featureGeomChangedListener);
   };
 }
+function createAddHeightProfileAction(
+  contentComponent: WindowComponentOptions,
+  app: VcsUiApp,
+): VcsAction {
+  return {
+    name: 'heightProfile.collection.add',
+    title: 'heightProfile.collection.add',
+    icon: '$vcsPlus',
+    callback(): void {
+      app.windowManager.add(contentComponent, name);
+    },
+  };
+}
+export function createGraphComponentOptions(
+  props: {
+    featureId: string;
+    resultNames: string[];
+  },
+  collection: Collection<HeightProfileResult>,
+  parentId: string,
+): WindowComponentOptions {
+  return {
+    id: windowIdGraph,
+    parentId,
+    component: GraphComponent,
+    slot: WindowSlot.DYNAMIC_CHILD,
+    position: {
+      left: '35%',
+      right: '35%',
+      top: '10%',
+    },
+    state: {
+      headerTitle: 'heightProfile.title',
+    },
+    props,
+    provides: {
+      collection,
+    },
+  };
+}
+function setupCollectionComponent(
+  app: VcsUiApp,
+  feature: HeightProfileFeature,
+): {
+  destroy: () => void;
+  collectionComponent: CollectionComponentClass<HeightProfileResult>;
+} {
+  const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
+  const windowIdHeightProfile = getHeightProfileEditorId(
+    plugin.heightProfileCategory,
+  );
 
-function createSourceListeners(layer: VectorLayer): () => void {
+  const results = feature.getProperty('vcsHeightProfile');
+  if (results) {
+    feature.unset('vcsHeightProfile');
+  }
+
+  const collection: Collection<HeightProfileResult> = results
+    ? Collection.from(results)
+    : new Collection();
+  const collectionComponent = new CollectionComponentClass(
+    {
+      id: 'heightProfileCollection',
+      title: 'heightProfile.calcResults',
+      draggable: false,
+      renamable: true,
+      removable: true,
+      selectable: true,
+      collection,
+    },
+    name,
+  );
+
+  const featureId = String(feature.getId());
+  const contentComponent = {
+    id: windowIdSetParameter,
+    parentId: windowIdHeightProfile,
+    component: HeightProfileParameterComponent,
+    slot: WindowSlot.DYNAMIC_CHILD,
+    state: {
+      headerTitle: 'heightProfile.title',
+    },
+    props: {
+      featureId,
+    },
+    provides: {
+      collection,
+      collectionComponent,
+    },
+  };
+
+  const addAnchorAction = createAddHeightProfileAction(contentComponent, app);
+
+  collectionComponent.addActions([
+    {
+      action: addAnchorAction,
+      owner: name,
+    },
+  ]);
+
+  function showGraphAction(
+    item: HeightProfileResult,
+    listItem: CollectionComponentListItem,
+  ): VcsAction {
+    return {
+      name: 'heightProfile.graphAction',
+      title: 'heightProfile.graphAction',
+      callback(): void {
+        const props = {
+          featureId,
+          resultNames: [item.name],
+        };
+        if (!app.windowManager.has(windowIdGraph)) {
+          app.windowManager.add(
+            createGraphComponentOptions(
+              props,
+              collection,
+              windowIdHeightProfile,
+            ),
+            name,
+          );
+        }
+        if (
+          !collectionComponent.selection.value.find(
+            (l) => l.name === listItem.name,
+          )
+        ) {
+          collectionComponent.selection.value = [
+            listItem,
+            ...collectionComponent.selection.value,
+          ];
+        }
+      },
+    };
+  }
+
+  collectionComponent.addItemMapping({
+    mappingFunction: (item, _c, listItem) => {
+      listItem.actions = [...listItem.actions, showGraphAction(item, listItem)];
+    },
+    owner: name,
+  });
+
+  const selectionWatcher = watch(
+    collectionComponent.selection,
+    async (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        const names = [];
+        for (const item of newValue) {
+          names.push(item.name);
+        }
+        app.windowManager.remove(windowIdGraph);
+
+        const props = {
+          featureId,
+          resultNames: names,
+        };
+        await nextTick();
+        if (names.length > 0) {
+          app.windowManager.add(
+            createGraphComponentOptions(
+              props,
+              collection,
+              windowIdHeightProfile,
+            ),
+            name,
+          );
+        }
+      }
+    },
+  );
+
+  return {
+    destroy: (): void => {
+      selectionWatcher();
+      collectionComponent.destroy();
+    },
+    collectionComponent,
+  };
+}
+function createSourceListeners(layer: VectorLayer, app: VcsUiApp): () => void {
   const featureListeners = new Map<Feature, () => void>();
   const sourceChangeFeature = layer.source.on('addfeature', (event) => {
     const f = event.feature as HeightProfileFeature;
 
-    f[resultCollectionSymbol] = new Collection();
-    f[resultCollectionComponentSymbol] = new CollectionComponentClass(
-      {
-        id: 'heightProfileCollection',
-        title: 'heightProfile.calcResults',
-        draggable: false,
-        renamable: true,
-        removable: true,
-        selectable: true,
-        collection: f[resultCollectionSymbol],
-      },
-      name,
-    );
-    featureListeners.set(f, createFeatureListeners(f));
+    const featureNumber = layer.getFeatures().length;
+
+    f.setProperties({ name: `heightProfile-${featureNumber}` });
+    const { collectionComponent, destroy: destroyCollectionComponent } =
+      setupCollectionComponent(app, f);
+    f[resultCollectionSymbol] = collectionComponent.collection;
+    f[resultCollectionComponentSymbol] = collectionComponent;
+
+    featureListeners.set(f, () => {
+      destroyCollectionComponent();
+      createFeatureListeners(f);
+    });
   });
 
   const sourceRemoveFeature: EventsKey = layer.source.on(
@@ -180,7 +360,7 @@ export async function createHeightProfileLayer(
   app: VcsUiApp,
 ): Promise<{ destroy: () => void; layer: VectorLayer }> {
   const { destroy, layer } = await createVectorLayer(app);
-  const destroyLayerListener = createSourceListeners(layer);
+  const destroyLayerListener = createSourceListeners(layer, app);
 
   return {
     destroy: (): void => {
@@ -346,7 +526,7 @@ export function createCreateAction(
           component: HeightProfileWrapper,
           slot: WindowSlot.DYNAMIC_LEFT,
           state: {
-            headerTitle: 'heightProfile.title',
+            headerTitle: 'heightProfile.tempTitle',
           },
         };
         await nextTick();
@@ -419,20 +599,22 @@ export function createToolboxButton(
   };
 }
 
-export type HeightProfileItem = { name: string; feature: Feature };
+export type HeightProfileItem = Feature<LineString>;
 
 export async function createCategory(
   app: VcsUiApp,
   plugin: HeightProfilePlugin,
 ): Promise<{
   editorCollection: EditorCollectionComponentClass<HeightProfileItem>;
-  workbenchSelectionWatcher: () => void;
+  destroy: () => void;
 }> {
   const { collectionComponent } =
     await app.categoryManager.requestCategory<HeightProfileItem>(
       {
         name: 'HeightProfile',
         title: 'heightProfile.title',
+        // @ts-expect-error id is private and therefore not typed
+        keyProperty: 'id_',
       },
       name,
       {
@@ -441,6 +623,7 @@ export async function createCategory(
         removable: true,
       },
     );
+
   const highlightStyle = getDefaultHighlightStyle();
   const workbenchSelectionWatcher = watch(
     collectionComponent.selection,
@@ -479,12 +662,48 @@ export async function createCategory(
           headerIcon: '$vcsElevationProfile',
         },
         props: {
-          featureId: item.feature.getId(),
+          featureId: item.getId(),
         },
       }),
     },
     'category-manager',
   );
 
-  return { editorCollection, workbenchSelectionWatcher };
+  const listeners = [
+    collectionComponent.collection.added.addEventListener((added) => {
+      plugin.layer.addFeatures([added]);
+    }),
+    collectionComponent.collection.removed.addEventListener((removed) => {
+      plugin.layer.removeFeaturesById([String(removed.getId())]);
+    }),
+  ];
+  collectionComponent.addItemMapping({
+    mappingFunction: (item, _c, listItem) => {
+      listItem.title = item.getProperty('name');
+
+      listItem.titleChanged = (title): void => {
+        item.setProperties({ name: title });
+        listItem.title = title;
+
+        const heightProfileWindow = app.windowManager.get(
+          getHeightProfileEditorId(editorCollection),
+        );
+        if (
+          heightProfileWindow &&
+          (heightProfileWindow.props as { featureId?: string }).featureId ===
+            item.getId()
+        ) {
+          heightProfileWindow.state.headerTitle = title;
+        }
+      };
+    },
+    owner: name,
+  });
+  return {
+    editorCollection,
+    destroy: (): void => {
+      workbenchSelectionWatcher();
+      listeners.forEach((listener) => listener());
+    },
+  };
 }

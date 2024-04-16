@@ -35,222 +35,37 @@
 </template>
 <script lang="ts">
   import {
+    computed,
     defineComponent,
     inject,
-    ref,
     onUnmounted,
-    computed,
     provide,
-    watch,
-    nextTick,
+    ref,
   } from 'vue';
-  import { VSheet, VContainer } from 'vuetify/lib';
+  import { VContainer, VSheet } from 'vuetify/lib';
   import {
-    Collection,
-    SessionType,
-    getFlatCoordinatesFromGeometry,
     getDefaultProjection,
-    Projection,
+    getFlatCoordinatesFromGeometry,
     mercatorProjection,
+    Projection,
+    SessionType,
   } from '@vcmap/core';
   import {
-    VcsDataTable,
-    VcsFormSection,
-    VcsFormButton,
-    VcsUiApp,
-    CollectionComponentClass,
     CollectionComponentStandalone,
-    WindowSlot,
-    VcsAction,
-    WindowComponentOptions,
-    CollectionComponentListItem,
+    VcsDataTable,
+    VcsFormButton,
+    VcsFormSection,
+    VcsUiApp,
+    WindowState,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
+  import { createCreateAction, createEditAction } from './setup.js';
   import {
-    HeightProfileResult,
-    createCreateAction,
-    getHeightProfileEditorId,
-    createEditAction,
-  } from './setup.js';
-  import {
-    resultCollectionSymbol,
     type HeightProfileFeature,
     resultCollectionComponentSymbol,
   } from './heightProfileFeature.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
-  import HeightProfileParameterComponent, {
-    windowIdSetParameter,
-  } from './HeightProfileParameterComponent.vue';
-  import { windowIdGraph } from './chart.js';
-  import GraphComponent from './GraphComponent.vue';
-
-  export function createGraphComponentOptions(
-    props: {
-      featureId: string;
-      resultNames: string[];
-    },
-    collection: Collection<HeightProfileResult>,
-    parentId: string,
-  ): WindowComponentOptions {
-    return {
-      id: windowIdGraph,
-      parentId,
-      component: GraphComponent,
-      slot: WindowSlot.DYNAMIC_CHILD,
-      position: {
-        left: '35%',
-        right: '35%',
-        top: '10%',
-      },
-      state: {
-        headerTitle: 'heightProfile.title',
-      },
-      props,
-      provides: {
-        collection,
-      },
-    };
-  }
-  function createAddHeightProfileAction(
-    contentComponent: WindowComponentOptions,
-    app: VcsUiApp,
-  ): VcsAction {
-    return {
-      name: 'heightProfile.collection.add',
-      title: 'heightProfile.collection.add',
-      icon: '$vcsPlus',
-      callback(): void {
-        app.windowManager.add(contentComponent, name);
-      },
-    };
-  }
-
-  function setupCollectionComponent(
-    app: VcsUiApp,
-    feature: HeightProfileFeature,
-    featureId: string,
-  ): {
-    destroy: () => void;
-    collectionComponent: CollectionComponentClass<HeightProfileResult>;
-  } {
-    const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
-    const windowIdHeightProfile = getHeightProfileEditorId(
-      plugin.heightProfileCategory,
-    );
-    const collection = feature[resultCollectionSymbol];
-
-    const collectionComponent = feature[resultCollectionComponentSymbol];
-
-    const contentComponent = {
-      id: windowIdSetParameter,
-      parentId: windowIdHeightProfile,
-      component: HeightProfileParameterComponent,
-      slot: WindowSlot.DYNAMIC_CHILD,
-      state: {
-        headerTitle: 'heightProfile.title',
-      },
-      props: {
-        featureId,
-      },
-      provides: {
-        collection,
-        collectionComponent,
-      },
-    };
-
-    const addAnchorAction = createAddHeightProfileAction(contentComponent, app);
-
-    collectionComponent.addActions([
-      {
-        action: addAnchorAction,
-        owner: name,
-      },
-    ]);
-
-    function showGraphAction(
-      item: HeightProfileResult,
-      listItem: CollectionComponentListItem,
-    ): VcsAction {
-      return {
-        name: 'heightProfile.graphAction',
-        title: 'heightProfile.graphAction',
-        callback(): void {
-          const props = {
-            featureId,
-            resultNames: [item.name],
-          };
-          if (!app.windowManager.has(windowIdGraph)) {
-            app.windowManager.add(
-              createGraphComponentOptions(
-                props,
-                collection,
-                windowIdHeightProfile,
-              ),
-              name,
-            );
-          }
-          if (
-            !collectionComponent.selection.value.find(
-              (l) => l.name === listItem.name,
-            )
-          ) {
-            collectionComponent.selection.value = [
-              listItem,
-              ...collectionComponent.selection.value,
-            ];
-          }
-        },
-      };
-    }
-
-    collectionComponent.addItemMapping({
-      mappingFunction: (item, _c, listItem) => {
-        listItem.actions = [
-          ...listItem.actions,
-          showGraphAction(item, listItem),
-        ];
-      },
-      owner: name,
-    });
-
-    const selectionWatcher = watch(
-      collectionComponent.selection,
-      async (newValue, oldValue) => {
-        if (newValue !== oldValue) {
-          const names = [];
-          for (const item of newValue) {
-            names.push(item.name);
-          }
-          app.windowManager.remove(windowIdGraph);
-
-          const props = {
-            featureId,
-            resultNames: names,
-          };
-          await nextTick();
-          if (names.length > 0) {
-            app.windowManager.add(
-              createGraphComponentOptions(
-                props,
-                collection,
-                windowIdHeightProfile,
-              ),
-              name,
-            );
-          }
-        }
-      },
-    );
-
-    return {
-      destroy: (): void => {
-        selectionWatcher();
-        collectionComponent.destroy();
-      },
-      collectionComponent,
-    };
-  }
 
   export default defineComponent({
     name: 'HeightProfileEditorComponent',
@@ -268,7 +83,7 @@
         required: true,
       },
     },
-    setup(props) {
+    setup(props, { emit, attrs }) {
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
       const isCreateSession = computed(
@@ -278,16 +93,27 @@
         () => plugin.session.value?.type === SessionType.EDIT_GEOMETRY,
       );
       const points = ref();
-      const feature =
-        plugin.layer.getFeatureById(props.featureId) ||
-        (plugin.heightProfileCategory.collection.getByKey(props.featureId)
-          ?.feature as HeightProfileFeature);
+      const feature = (plugin.layer.getFeatureById(props.featureId) ||
+        plugin.heightProfileCategory.collection.getByKey(
+          props.featureId,
+        )) as HeightProfileFeature;
       if (!feature) {
         throw new Error('Feature not found');
+      }
+      function emitTitle(): void {
+        emit('update-title', String(feature.getProperty('name')));
       }
       const currentIsPersisted = ref(
         plugin.heightProfileCategory.collection.hasKey(props.featureId),
       );
+      if (currentIsPersisted.value) {
+        if (feature) {
+          (attrs['window-state'] as WindowState).headerTitle = String(
+            feature.getProperty('name'),
+          );
+          emitTitle();
+        }
+      }
 
       if (feature.getGeometry()) {
         const coords = getFlatCoordinatesFromGeometry(feature.getGeometry()!);
@@ -312,28 +138,21 @@
 
       function addToWorkspace(): void {
         if (feature) {
-          plugin.heightProfileCategory.collection.add({
-            name: feature.getId() as string,
-            feature,
-          });
+          plugin.heightProfileCategory.collection.add(feature);
+          emitTitle();
         }
       }
 
       const workspaceAddedListener =
         plugin.heightProfileCategory.collection.added.addEventListener(
           (item) => {
-            if (feature === item.feature) {
+            if (feature === item) {
               currentIsPersisted.value = true;
             }
           },
         );
 
-      const { collectionComponent, destroy: destroyCollectionComponent } =
-        setupCollectionComponent(
-          app,
-          feature as HeightProfileFeature,
-          props.featureId,
-        );
+      const collectionComponent = feature[resultCollectionComponentSymbol];
 
       provide('collectionComponent', collectionComponent);
 
@@ -393,7 +212,6 @@
         workspaceAddedListener();
         destroyEditAction();
         destroy();
-        destroyCollectionComponent();
       });
 
       return {

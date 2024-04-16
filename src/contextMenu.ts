@@ -19,7 +19,6 @@ export function createContextMenu(
         const feature = event.feature as Feature<Geometry>;
 
         const { action: editAction } = createEditAction(app, feature, plugin);
-        // destroy use
         actions.push(editAction);
 
         return actions;

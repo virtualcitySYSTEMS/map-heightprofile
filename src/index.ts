@@ -18,6 +18,7 @@ import {
   HeightProfileItem,
 } from './setup.js';
 import { createContextMenu } from './contextMenu.js';
+import { createImportExport } from './importExportHelper.js';
 
 type PluginConfig = Record<never, never>;
 type PluginState = Record<never, never>;
@@ -84,9 +85,14 @@ export default function plugin(): HeightProfilePlugin {
 
       const {
         editorCollection: heightProfileCategoryVar,
-        workbenchSelectionWatcher: destroySelectionWatcher,
+        destroy: destroySelectionWatcher,
       } = await createCategory(vcsUiApp, this);
       heightProfileCategory = heightProfileCategoryVar;
+
+      const destroyImportExport = createImportExport(
+        vcsUiApp,
+        heightProfileCategory,
+      );
 
       const { destroy: destroyMeasurementLayer, layer: layerMeasure } =
         await createVectorLayer(vcsUiApp);
@@ -105,6 +111,7 @@ export default function plugin(): HeightProfilePlugin {
       const contextMenuDestroy = createContextMenu(vcsUiApp, this, name);
 
       destroyListeners.push(
+        destroyImportExport,
         destroySelectionWatcher,
         contextMenuDestroy,
         destroyLayer,
@@ -169,6 +176,7 @@ export default function plugin(): HeightProfilePlugin {
             'Subsequent modification of the geometry deletes all previously calculated profiles.',
           initialMessage:
             'Click the map to define the line of your profile. Double click a location to end your line.',
+          tempTitle: 'Temporary Profileline',
         },
       },
       de: {
@@ -211,6 +219,7 @@ export default function plugin(): HeightProfilePlugin {
             'Die nachträgliche Veränderung der Geometry löscht alle bisher berechneten Profile.',
           initialMessage:
             'Klicken Sie auf die Karte, um die Linie Ihres Profils zu definieren. Doppelklicken Sie auf eine Stelle, um Ihre Linie zu beenden.',
+          tempTitle: 'Temporäre Profillinie',
         },
       },
     },

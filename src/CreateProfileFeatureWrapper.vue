@@ -18,7 +18,6 @@
   import HeightProfileEditor from './HeightProfileEditor.vue';
   import { HeightProfilePlugin } from './index.js';
 
-  export const HeightProfileWrapperId = 'heightProfileWrapper_window_id';
   export default defineComponent({
     name: 'CreateProfileFeatureWrapper',
     components: {

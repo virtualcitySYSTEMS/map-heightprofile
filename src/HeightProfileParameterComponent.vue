@@ -42,7 +42,7 @@
       </div>
     </VcsFormSection>
     <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
-      <VcsFormButton variant="filled" @click="startCalc">
+      <VcsFormButton variant="filled" :disabled="disabled" @click="startCalc">
         {{ $t('heightProfile.results') }}
       </VcsFormButton>
     </div>
@@ -94,11 +94,14 @@
   import { LineString } from 'ol/geom.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
-  import { ElevationType, HeightProfileResult } from './setup.js';
+  import {
+    ElevationType,
+    HeightProfileResult,
+  } from './setupResultCollectionComponent.js';
   import {
     CancelledError,
     createHeightProfileCalculation,
-  } from './calculationHelper.js';
+  } from './helper/calculationHelper.js';
 
   export const windowIdSetParameter = 'heightProfileSetParameter_window_id';
   export default defineComponent({
@@ -132,7 +135,10 @@
       const elevationType = ref('both') as Ref<ElevationType>;
       const dialogVisible = ref(false);
       const progressBar = ref(0);
-
+      const disabled = ref(true);
+      const mapListener = app.maps.mapActivated.addEventListener((item) => {
+        disabled.value = !(item instanceof CesiumMap);
+      });
       const collection = inject(
         'collection',
       ) as Collection<HeightProfileResult>;
@@ -152,6 +158,7 @@
 
       let scene: Scene | undefined;
       if (app.maps.activeMap instanceof CesiumMap) {
+        disabled.value = false;
         scene = app.maps.activeMap.getScene();
       }
       function calculateHeightProfile(): () => void {
@@ -174,15 +181,20 @@
             .then((resultPoints) => {
               if (resultPoints.ok) {
                 const collName = uuidv4();
+                const appLayers = [...app.layers].filter(
+                  (layer) => layer.active,
+                );
+                const layerNames = appLayers.map((layer) => layer.name);
                 const item: HeightProfileResult = {
                   name: collName,
                   properties: {
-                    title: `${String(app.vueI18n.t('heightProfile.title'))}-${collection.size + 1}`,
+                    // title: `${String(app.vueI18n.t('heightProfile.profile'))}-${collection.size + 1}`,
+                    title: `profile-${collection.size + 1}`,
                   },
 
                   resolution: resolutionValue,
                   elevationType: elevationType.value,
-                  layerNames: ['layer1', 'layer2'],
+                  layerNames,
                   resultPoints: resultPoints.points,
                 };
                 collection.add(item);
@@ -196,7 +208,7 @@
                 if (resultPoints.error instanceof CancelledError) {
                   app.notifier.add({
                     type: NotificationType.WARNING,
-                    message: String('heightProfile.heightProfileCanceled'),
+                    message: 'heightProfile.heightProfileCanceled',
                   });
                 } else {
                   app.notifier.add({
@@ -227,10 +239,13 @@
       const cancelCalc = (): void => {
         cancelFunc();
       };
-      onUnmounted(() => {});
+      onUnmounted(() => {
+        mapListener();
+      });
 
       return {
         terrainselectvalues,
+        disabled,
         resolution,
         elevationType,
         dialogVisible,

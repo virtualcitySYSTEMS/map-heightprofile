@@ -10,7 +10,7 @@ import {
   Scene,
   sampleTerrainMostDetailed,
 } from '@vcmap-cesium/engine';
-import { ElevationType } from './setup.js';
+import { ElevationType } from '../setupResultCollectionComponent.js';
 
 type Result<T, E = Error> =
   | { ok: true; readonly points: T }
@@ -152,7 +152,6 @@ export function createHeightProfileCalculation(
 
   return {
     resolutionValue,
-
     progress,
     totalNumberOfPoints,
     cancel,

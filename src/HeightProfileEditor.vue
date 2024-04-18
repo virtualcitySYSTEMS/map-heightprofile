@@ -2,7 +2,7 @@
   <v-sheet>
     <VcsFormSection
       :heading="`heightProfile.points`"
-      :header-actions="editActions"
+      :header-actions="[editAction]"
     >
       <v-container class="pa-0">
         <vcs-data-table
@@ -59,7 +59,10 @@
     WindowState,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
-  import { createCreateAction, createEditAction } from './setup.js';
+  import {
+    createCreateAction,
+    createEditAction,
+  } from './helper/actionHelper.js';
   import {
     type HeightProfileFeature,
     resultCollectionComponentSymbol,
@@ -97,26 +100,11 @@
         plugin.heightProfileCategory.collection.getByKey(
           props.featureId,
         )) as HeightProfileFeature;
-      if (!feature) {
-        throw new Error('Feature not found');
-      }
-      function emitTitle(): void {
-        emit('update-title', String(feature.getProperty('name')));
-      }
-      const currentIsPersisted = ref(
-        plugin.heightProfileCategory.collection.hasKey(props.featureId),
-      );
-      if (currentIsPersisted.value) {
-        if (feature) {
-          (attrs['window-state'] as WindowState).headerTitle = String(
-            feature.getProperty('name'),
-          );
-          emitTitle();
-        }
-      }
 
-      if (feature.getGeometry()) {
-        const coords = getFlatCoordinatesFromGeometry(feature.getGeometry()!);
+      function setPointsFromFeature(featureItem: HeightProfileFeature): void {
+        const coords = getFlatCoordinatesFromGeometry(
+          featureItem.getGeometry()!,
+        );
         const positions = [];
         for (const coord of coords) {
           if (coord) {
@@ -134,6 +122,27 @@
           }
         }
         points.value = positions;
+      }
+
+      if (!feature) {
+        throw new Error('Feature not found');
+      }
+      function emitTitle(): void {
+        emit('update-title', String(feature.getProperty('name')));
+      }
+      const currentIsPersisted = ref(
+        plugin.heightProfileCategory.collection.hasKey(props.featureId),
+      );
+      if (currentIsPersisted.value) {
+        if (feature) {
+          (attrs['window-state'] as WindowState).headerTitle = String(
+            feature.getProperty('name'),
+          );
+        }
+      }
+
+      if (feature.getGeometry()) {
+        setPointsFromFeature(feature);
       }
 
       function addToWorkspace(): void {
@@ -159,26 +168,7 @@
       const featureListenerGeometry = feature
         .getGeometry()
         ?.on('change', () => {
-          const geometry = feature.getGeometry();
-          const coords = getFlatCoordinatesFromGeometry(geometry!);
-          const positions = [];
-          for (const coord of coords) {
-            if (coord) {
-              const coordP = Projection.transform(
-                getDefaultProjection(),
-                mercatorProjection,
-                coord,
-              );
-              positions.push({
-                id: `Punkt ${positions.length + 1}`,
-                name: undefined,
-                x: coordP[0].toFixed(2),
-                y: coordP[1].toFixed(2),
-              });
-            }
-          }
-
-          points.value = positions;
+          setPointsFromFeature(feature);
         });
 
       const { action, destroy } = createCreateAction(
@@ -205,7 +195,6 @@
 
       const { action: editAction, destroy: destroyEditAction } =
         createEditAction(app, feature, plugin);
-      const editActions = ref([editAction]);
 
       onUnmounted(() => {
         unByKey(featureListenerGeometry!);
@@ -222,7 +211,7 @@
         isCreateSession,
         isEditSession,
         currentIsPersisted,
-        editActions,
+        editAction,
       };
     },
   });

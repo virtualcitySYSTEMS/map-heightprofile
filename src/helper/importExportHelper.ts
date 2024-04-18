@@ -9,12 +9,12 @@ import {
 import { parseGeoJSON, writeGeoJSON } from '@vcmap/core';
 import Feature from 'ol/Feature';
 import { LineString } from 'ol/geom';
-import { name } from '../package.json';
-import { HeightProfileItem } from './setup.js';
+import { name } from '../../package.json';
+import { HeightProfileItem } from './heightProfileEditorHelper.js';
 import {
   HeightProfileFeature,
   resultCollectionSymbol,
-} from './heightProfileFeature.js';
+} from '../heightProfileFeature.js';
 
 // eslint-disable-next-line import/prefer-default-export
 export function createImportExport(

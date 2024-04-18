@@ -8,17 +8,19 @@ import {
 import { ShallowRef } from 'vue';
 import { name, version, mapVersion } from '../package.json';
 
+import { createToolboxButton } from './helper/actionHelper.js';
+import { createCategory } from './setupHeightProfileCategory.js';
+import { HeightProfileItem } from './helper/heightProfileEditorHelper.js';
 import {
   HeightProfileSessionType,
-  createCategory,
-  createHeightProfileLayer,
   createSessionReference,
-  createToolboxButton,
+} from './helper/sessionHelper.js';
+import {
   createVectorLayer,
-  HeightProfileItem,
-} from './setup.js';
+  createHeightProfileLayer,
+} from './helper/layerHelpers.js';
 import { createContextMenu } from './contextMenu.js';
-import { createImportExport } from './importExportHelper.js';
+import { createImportExport } from './helper/importExportHelper.js';
 
 type PluginConfig = Record<never, never>;
 type PluginState = Record<never, never>;
@@ -123,13 +125,13 @@ export default function plugin(): HeightProfilePlugin {
       return Promise.resolve();
     },
     /**
-     * should return all default values of the configuration
+     * should return all default values of the configuratio n
      */
     getDefaultOptions(): PluginConfig {
       return {};
     },
     /**
-     * should return the plugin's serialization excluding all default values
+     * should return the plugin's serialization excluding all default value s
      */
     toJSON(): PluginConfig {
       return {};
@@ -151,20 +153,22 @@ export default function plugin(): HeightProfilePlugin {
           collection: {
             add: 'Create Height Profile',
           },
-          edit: 'Edit',
+          edit: 'Edit Geometry',
           delete: 'Delete',
           title: 'Height Profile',
-          create: 'Create',
-          classificationType: { DGM: 'DEM', DOM: 'DSM' },
+          create: 'Height Profile',
+          profile: 'Profile',
+          diagram: 'Calculated profiles: Diagram',
+          classificationType: { DGM: 'DTM', DOM: 'DSM' },
           resolution: 'Resolution [m]',
-          results: 'Create Result',
+          results: 'Start calculation',
           new: 'New',
-          pointsMultiple: 'Anchor Points',
-          points: 'Points',
+          pointsMultiple: 'Name',
+          points: 'Anchor Points',
           point: 'Point',
-          settings: 'Profile Settings',
+          settings: 'Settings',
           classification: 'Classification Type',
-          calcResults: 'Height Profiles',
+          calcResults: 'Calculated profiles',
           calc: 'Calculate',
           cancel: 'Cancel',
           dialogText: 'The Height Profile is being calculated.',
@@ -176,7 +180,24 @@ export default function plugin(): HeightProfilePlugin {
             'Subsequent modification of the geometry deletes all previously calculated profiles.',
           initialMessage:
             'Click the map to define the line of your profile. Double click a location to end your line.',
-          tempTitle: 'Temporary Profileline',
+          tempTitle: 'Temporary Profile line',
+          scaleFactor: 'Scale factor',
+          measurement: {
+            start: 'start measurement in graph',
+            stop: 'stop measurement in graph',
+            clear: 'delete measurement in graph',
+          },
+          reset: 'Resetting the adjustments to the graph',
+          nn: 'Toggle Normal Null Mode',
+
+          helperText: {
+            part1:
+              'To perform measurements in the profile click on the chart. Define two points of interest. A third click starts a new measurement.',
+            part2: '2.  Select the profile in the map to edit it.',
+          },
+          layerWarning:
+            'Layer configuration changed. Please re-generate profile graph.',
+          parameterComponent: 'Calculate Profile',
         },
       },
       de: {
@@ -194,24 +215,26 @@ export default function plugin(): HeightProfilePlugin {
           collection: {
             add: 'Erstellen eines Höhenprofils',
           },
-          edit: 'Bearbeiten',
+          edit: 'Geometrie Bearbeiten',
           delete: 'Löschen',
           title: 'Höhenprofil',
-          create: 'Erstellen',
+          create: 'Höhenprofil',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },
           resolution: 'Auflösung [m]',
-          results: 'Ergebnis erstellen',
+          results: 'Berechnung starten',
           new: 'Neu',
-          pointsMultiple: 'Ankerpunkte',
-          points: 'Punkte',
+          pointsMultiple: 'Name',
+          points: 'Stützpunkte',
           point: 'Punkt',
-          settings: 'Profil Einstellungen',
+          diagram: 'Berechnete Profile: Diagramm',
+          settings: 'Einstellungen',
           classification: 'Klassifikationstyp',
-          calcResults: 'Höhenprofile',
+          calcResults: 'Berechnete Profile',
           calc: 'Berechnen',
           cancel: 'Abbrechen',
+          profile: 'Profil',
           dialogText: 'Das Höhenprofil wird berechnet.',
-          graphAction: 'Graph Anzeigen',
+          graphAction: 'Graph anzeigen',
           measureLine: 'Messlinie',
           measurementWarning:
             'Es kann nur eine Messlinie erstellt werden, wenn nicht mehr als eine Höhenlinie im Graph dargestellt wird.',
@@ -220,6 +243,23 @@ export default function plugin(): HeightProfilePlugin {
           initialMessage:
             'Klicken Sie auf die Karte, um die Linie Ihres Profils zu definieren. Doppelklicken Sie auf eine Stelle, um Ihre Linie zu beenden.',
           tempTitle: 'Temporäre Profillinie',
+          scaleFactor: 'Überhöhungsfaktor',
+          measurement: {
+            start: 'Messung im Graphen starten',
+            stop: 'Messung im Graphen stoppen',
+            clear: 'Messung im Graphen löschen',
+          },
+          reset: 'Zurücksetzen der Anpassungen des Graphen',
+          nn: 'Normal Null Modus umschalten',
+          helperText: {
+            part1:
+              'Um Messungen im Profil durchzuführen, klicken Sie auf das Diagramm. Definieren Sie zwei Punkte von Interesse. Ein dritter Klick startet eine neue Messung.',
+            part2:
+              '2.  Wählen Sie das Profil in der Karte aus, um es zu bearbeiten.',
+          },
+          layerWarning:
+            'Ebenenkonfiguration geändert. Bitte generieren Sie das Profildiagramm neu.',
+          parameterComponent: 'Profil berechnen',
         },
       },
     },

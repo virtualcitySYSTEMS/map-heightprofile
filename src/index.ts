@@ -141,6 +141,9 @@ export default function plugin(): HeightProfilePlugin {
         heightProfile: {
           titleTemporary: 'Height Profile',
           heightProfileCalculated: 'Height Profile Calculated',
+          distance: 'Distance (m)',
+          height: 'Height (m)',
+          resolutionError: 'The resolution must be above 0',
           heightProfileCanceled:
             'Calculation of the height profile was canceled!',
           tooltip: {
@@ -151,12 +154,13 @@ export default function plugin(): HeightProfilePlugin {
             title: 'Height Profile',
           },
           collection: {
-            add: 'Create Height Profile',
+            add: 'Calculate new profile',
           },
           edit: 'Edit Geometry',
           delete: 'Delete',
           title: 'Height Profile',
           create: 'Height Profile',
+          tip: 'calculate height profile',
           profile: 'Profile',
           diagram: 'Calculated profiles: Diagram',
           classificationType: { DGM: 'DTM', DOM: 'DSM' },
@@ -180,7 +184,7 @@ export default function plugin(): HeightProfilePlugin {
             'Subsequent modification of the geometry deletes all previously calculated profiles.',
           initialMessage:
             'Click the map to define the line of your profile. Double click a location to end your line.',
-          tempTitle: 'Temporary Profile line',
+          tempTitle: 'Temporary height profile',
           scaleFactor: 'Scale factor',
           measurement: {
             start: 'start measurement in graph',
@@ -196,7 +200,7 @@ export default function plugin(): HeightProfilePlugin {
             part2: '2.  Select the profile in the map to edit it.',
           },
           layerWarning:
-            'Layer configuration changed. Please re-generate profile graph.',
+            'Layer configuration changed. The diagram may differ from the map display.',
           parameterComponent: 'Calculate Profile',
         },
       },
@@ -213,10 +217,14 @@ export default function plugin(): HeightProfilePlugin {
             title: 'Höhenprofil',
           },
           collection: {
-            add: 'Erstellen eines Höhenprofils',
+            add: 'Neues Profil berechnen',
           },
-          edit: 'Geometrie Bearbeiten',
+          distance: 'Distanz (m)',
+          height: 'Höhe (m)',
+          resolutionError: 'Die Auflösung muss größer als 0 sein.',
+          edit: 'Geometrie bearbeiten',
           delete: 'Löschen',
+          tip: 'Höhenprofil berechnen',
           title: 'Höhenprofil',
           create: 'Höhenprofil',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },
@@ -239,10 +247,10 @@ export default function plugin(): HeightProfilePlugin {
           measurementWarning:
             'Es kann nur eine Messlinie erstellt werden, wenn nicht mehr als eine Höhenlinie im Graph dargestellt wird.',
           editSessionWarning:
-            'Die nachträgliche Veränderung der Geometry löscht alle bisher berechneten Profile.',
+            'Die nachträgliche Veränderung der Geometrie löscht alle bisher berechneten Profile.',
           initialMessage:
             'Klicken Sie auf die Karte, um die Linie Ihres Profils zu definieren. Doppelklicken Sie auf eine Stelle, um Ihre Linie zu beenden.',
-          tempTitle: 'Temporäre Profillinie',
+          tempTitle: 'Temporäres Höhenprofil',
           scaleFactor: 'Überhöhungsfaktor',
           measurement: {
             start: 'Messung im Graphen starten',
@@ -258,7 +266,7 @@ export default function plugin(): HeightProfilePlugin {
               '2.  Wählen Sie das Profil in der Karte aus, um es zu bearbeiten.',
           },
           layerWarning:
-            'Ebenenkonfiguration geändert. Bitte generieren Sie das Profildiagramm neu.',
+            'Ebenenkonfiguration geändert. Das Diagramm kann von der Kartendarstellung abweichen.',
           parameterComponent: 'Profil berechnen',
         },
       },

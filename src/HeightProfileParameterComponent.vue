@@ -16,11 +16,11 @@
             <VcsTextField
               id="vp-resolution"
               type="number"
-              step="0.01"
-              min="0.01"
+              :step="1"
               :title="$t('heightProfile.tooltip.resolution')"
               show-spin-buttons
               v-model.number="resolution"
+              :rules="[resolutionRule]"
             />
           </v-col>
         </v-row>
@@ -41,8 +41,12 @@
         </v-row>
       </div>
     </VcsFormSection>
-    <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
-      <VcsFormButton variant="filled" :disabled="disabled" @click="startCalc">
+    <div class="d-flex w-full justify-end px-2 pt-2 pb-1">
+      <VcsFormButton
+        variant="filled"
+        :disabled="disabled || resolution <= 0"
+        @click="startCalc"
+      >
         {{ $t('heightProfile.results') }}
       </VcsFormButton>
     </div>
@@ -131,7 +135,7 @@
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
       const feature = plugin.layer.getFeatureById(featureId);
-      const resolution = ref(0.5);
+      const resolution = ref(1);
       const elevationType = ref('both') as Ref<ElevationType>;
       const dialogVisible = ref(false);
       const progressBar = ref(0);
@@ -185,11 +189,25 @@
                   (layer) => layer.active,
                 );
                 const layerNames = appLayers.map((layer) => layer.name);
+                let number = 1;
+                let title = `profile-${collection.size + number}`;
+
+                const titleExistsInCollection = (): boolean => {
+                  return [...collection].some(
+                    (item) => item.properties.title === title,
+                  );
+                };
+
+                while (titleExistsInCollection()) {
+                  number += 1;
+                  title = `profile-${collection.size + number}`;
+                }
+
                 const item: HeightProfileResult = {
                   name: collName,
                   properties: {
                     // title: `${String(app.vueI18n.t('heightProfile.profile'))}-${collection.size + 1}`,
-                    title: `profile-${collection.size + 1}`,
+                    title,
                   },
 
                   resolution: resolutionValue,
@@ -252,6 +270,8 @@
         startCalc,
         cancelCalc,
         progressBar,
+        resolutionRule: (v: number): boolean | string =>
+          v > 0 || 'heightProfile.resolutionError',
       };
     },
   });

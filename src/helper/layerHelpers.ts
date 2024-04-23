@@ -76,16 +76,19 @@ export function createSourceListeners(
     const f = event.feature as HeightProfileFeature;
 
     const featureNumber = layer.getFeatures().length;
-
-    f.setProperties({ name: `heightProfile-${featureNumber}` });
+    if (!f.getProperty('name')) {
+      f.setProperties({ name: `heightProfile-${featureNumber}` });
+    }
     const { collectionComponent, destroy: destroyCollectionComponent } =
       setupResultCollectionComponent(app, f);
     f[resultCollectionSymbol] = collectionComponent.collection;
     f[resultCollectionComponentSymbol] = collectionComponent;
 
+    const destroyFeatureListener = createFeatureListeners(f);
+
     featureListeners.set(f, () => {
       destroyCollectionComponent();
-      createFeatureListeners(f);
+      destroyFeatureListener();
     });
   });
 

@@ -3,6 +3,7 @@ import { Collection, Projection } from '@vcmap/core';
 import Feature from 'ol/Feature';
 import { LineString } from 'ol/geom';
 import { Stroke, Style } from 'ol/style';
+import { Ref } from 'vue';
 import type { HeightProfileResult } from '../setupResultCollectionComponent.js';
 import type { HeightProfilePlugin } from '../index.js';
 import { name } from '../../package.json';
@@ -125,6 +126,7 @@ function addTriangleToChartContext(
   values: [number, number][],
   series: SeriesEntry[],
   chartContext: ApexChartContext,
+  measurementActive: Ref<boolean>,
 ): () => void {
   const points = [
     [values[0][0], values[1][1]],
@@ -143,27 +145,33 @@ function addTriangleToChartContext(
   series.push(seriesElement);
 
   chartContext.updateSeries(series);
+  const iconStart = document.querySelector('.custom-icon-start');
+  if (iconStart) {
+    iconStart.classList.remove('primary--text');
+    measurementActive.value = false;
+  }
 
-  const sides = calcSideLength(values[0], values[1]);
-  createPointAnnotation(
-    (values[1][0] - values[0][0]) / 2 + values[0][0],
-    values[1][1],
-    sides[2].toFixed(2),
-    chartContext,
-  );
-  createPointAnnotation(
-    values[0][0],
-    (values[1][1] - values[0][1]) / 2 + values[0][1],
-    sides[1].toFixed(2),
-    chartContext,
-  );
-  createPointAnnotation(
-    (values[1][0] - values[0][0]) / 2 + values[0][0],
-    (values[1][1] - values[0][1]) / 2 + values[0][1],
-    sides[0].toFixed(2),
-    chartContext,
-  );
-
+  if (values.length === 2) {
+    const sides = calcSideLength(values[0], values[1]);
+    createPointAnnotation(
+      (values[1][0] - values[0][0]) / 2 + values[0][0],
+      values[1][1],
+      sides[2].toFixed(2),
+      chartContext,
+    );
+    createPointAnnotation(
+      values[0][0],
+      (values[1][1] - values[0][1]) / 2 + values[0][1],
+      sides[1].toFixed(2),
+      chartContext,
+    );
+    createPointAnnotation(
+      (values[1][0] - values[0][0]) / 2 + values[0][0],
+      (values[1][1] - values[0][1]) / 2 + values[0][1],
+      sides[0].toFixed(2),
+      chartContext,
+    );
+  }
   return () => {
     const indexToRemove = series.indexOf(seriesElement);
     if (indexToRemove !== -1) {
@@ -255,6 +263,7 @@ export function startChartMeasurement(
   chartContext: ApexChartContext,
   series: SeriesEntry[],
   results: Collection<HeightProfileResult>,
+  measurementActive: Ref<boolean>,
   initialValue?: [number, number],
 ): ChartMeasurement {
   const values: [number, number][] = [];
@@ -285,7 +294,13 @@ export function startChartMeasurement(
 
       finished = values.length === 2;
       if (finished) {
-        destroy = addTriangleToChartContext(app, values, series, chartContext);
+        destroy = addTriangleToChartContext(
+          app,
+          values,
+          series,
+          chartContext,
+          measurementActive,
+        );
         createMeasurementPointAnnotation(values, app, chartContext);
 
         const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
@@ -317,25 +332,27 @@ export function addMeasurementAnnotationsToGraph(
   chartContext: ApexChartContext,
   app: VcsUiApp,
 ): void {
-  const side = calcSideLength(values[0], values[1]);
-  createPointAnnotation(
-    (values[1][0] - values[0][0]) / 2 + values[0][0],
-    values[1][1],
-    side[2].toFixed(2),
-    chartContext,
-  );
-  createPointAnnotation(
-    values[0][0],
-    (values[1][1] - values[0][1]) / 2 + values[0][1],
-    side[1].toFixed(2),
-    chartContext,
-  );
-  createPointAnnotation(
-    (values[1][0] - values[0][0]) / 2 + values[0][0],
-    (values[1][1] - values[0][1]) / 2 + values[0][1],
-    side[0].toFixed(2),
-    chartContext,
-  );
+  if (values.length === 2) {
+    const side = calcSideLength(values[0], values[1]);
+    createPointAnnotation(
+      (values[1][0] - values[0][0]) / 2 + values[0][0],
+      values[1][1],
+      side[2].toFixed(2),
+      chartContext,
+    );
+    createPointAnnotation(
+      values[0][0],
+      (values[1][1] - values[0][1]) / 2 + values[0][1],
+      side[1].toFixed(2),
+      chartContext,
+    );
+    createPointAnnotation(
+      (values[1][0] - values[0][0]) / 2 + values[0][0],
+      (values[1][1] - values[0][1]) / 2 + values[0][1],
+      side[0].toFixed(2),
+      chartContext,
+    );
 
-  createMeasurementPointAnnotation(values, app, chartContext);
+    createMeasurementPointAnnotation(values, app, chartContext);
+  }
 }

@@ -45,12 +45,14 @@ export function setupChart(
   chartOptions: ApexOptions;
   scaleFactorSave: Ref<number>;
   scaleFactorInitial: Ref<number>;
+  nnActive: Ref<boolean>;
   destroy: () => void;
 } {
   let currentMeasurment: ChartMeasurement | undefined;
-  let measurementActive = false;
+  const measurementActive: Ref<boolean> = ref(false);
   const scaleFactorSave: Ref<number> = ref(0);
   const scaleFactorInitial: Ref<number> = ref(0);
+  const nnActive: Ref<boolean> = ref(false);
 
   function addScaleFactorToGraph(
     chartContext: ApexChartContext,
@@ -122,9 +124,9 @@ export function setupChart(
   const iconReset =
     '<svg xmlns="http://www.w3.org/2000/svg" width="13.98" height="12" viewBox="0 0 13.98 12" > <path id="Path_476" d="M965.562,566.241h-2.989v1.5h2.978a3.042,3.042,0,0,1,.051,6.083h-6.926l1.636-1.637a.75.75,0,0,0-1.06-1.06l-2.917,2.917a.732.732,0,0,0-.161.241.737.737,0,0,0,0,.578.732.732,0,0,0,.161.241l2.917,2.916a.75.75,0,0,0,1.06-1.06l-1.636-1.636h6.949a4.542,4.542,0,0,0-.063-9.084Z"  transform="translate(-956.115 -566.241)" fill="currentColor"/></svg>';
   const iconClear =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>layers-off</title><path d="M3.27,1L2,2.27L6.22,6.5L3,9L4.63,10.27L12,16L14.1,14.37L15.53,15.8L12,18.54L4.63,12.81L3,14.07L12,21.07L16.95,17.22L20.73,21L22,19.73L3.27,1M19.36,10.27L21,9L12,2L9.09,4.27L16.96,12.15L19.36,10.27M19.81,15L21,14.07L19.57,12.64L18.38,13.56L19.81,15Z" /></svg>';
+    '<svg id="icon-trash" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path id="delete" d="M14.525,4.27A.5.5,0,0,1,15,4.784V5.05a.5.5,0,0,1-.475.514H3.476A.5.5,0,0,1,3,5.05V4.784a.5.5,0,0,1,.476-.514H5.42a.866.866,0,0,0,.827-.71l.1-.477A1.341,1.341,0,0,1,7.624,2h2.753a1.338,1.338,0,0,1,1.268,1.048l.109.511a.865.865,0,0,0,.827.711Zm-.988,9.724c.2-1.986.558-6.7.558-6.751a.539.539,0,0,0-.121-.391.474.474,0,0,0-.349-.164H4.379a.461.461,0,0,0-.349.164.571.571,0,0,0-.127.391c0,.009.014.175.035.453.095,1.234.358,4.672.529,6.3a1.989,1.989,0,0,0,1.954,1.979c.837.02,1.7.027,2.581.027.831,0,1.674-.007,2.537-.027A1.988,1.988,0,0,0,13.537,13.994Z" transform="translate(-1 -0.996)" fill="currentColor" /><rect id="spacer" width="16" height="16" fill="none"/></svg>\n';
   const iconMeasure =
-    '<svg id="icon_24_2D_height" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"> <path id="Vereinigungsmenge_54" d="m2.39,22.95c-.77,0-1.39-.62-1.39-1.39h0V2.46c0-.77.62-1.39,1.39-1.39h3.47c.77,0,1.39.62,1.39,1.39h0v19.11c0,.77-.62,1.39-1.39,1.39h-3.47ZM2.39,2.8v18.41c0,.19.16.35.35.35h2.78c.19,0,.35-.16.35-.35v-2.25c0-.19-.16-.35-.35-.35h-.69c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.35-.15.35-.34v-.7c0-.19-.15-.35-.35-.35h-.69c-.29-.01-.51-.26-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35v-.71c0-.19-.15-.35-.35-.35h-.69c-.29-.01-.51-.25-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35v-.69c0-.19-.16-.35-.35-.35h-.69c-.29-.01-.51-.26-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35h0v-.7c0-.19-.15-.35-.35-.35h-.69c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.34-.15.35-.34v-.7c0-.19-.15-.34-.34-.34h-.7c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.34-.15.35-.34v-2.26c0-.19-.16-.35-.35-.35h-2.78c-.19,0-.35.16-.35.35Zm8.34,19.86l-1.39-1.39c-.2-.2-.2-.53,0-.74.1-.1.23-.15.37-.15h.35c.19,0,.35-.15.35-.35h0V3.7c0-.19-.16-.34-.35-.34h-.35c-.14,0-.27-.06-.37-.16-.2-.2-.2-.53,0-.73h0s1.39-1.39,1.39-1.39c.2-.2.53-.21.73,0h0s1.38,1.39,1.38,1.39c.1.1.15.23.15.37,0,.29-.23.52-.52.52h-.35c-.19,0-.34.15-.35.34v16.34c0,.19.16.35.35.35h.35c.29,0,.52.24.52.52,0,.14-.06.27-.15.37l-1.38,1.39c-.1.1-.23.15-.37.15-.14,0-.27-.05-.37-.15ZM3.42,3.84c0-.38.31-.69.69-.69.38,0,.69.31.69.69,0,.38-.31.69-.69.69-.38,0-.69-.31-.69-.69h0Z" fill="currentColor"/><path id="Pfad_682" d="m13.9,20.5h1.09c0-.15.01-.3.04-.45.03-.15.08-.29.15-.42.07-.12.16-.22.28-.3.13-.08.27-.12.42-.12.22,0,.44.07.6.23.16.17.25.4.24.64,0,.16-.04.32-.12.46-.08.13-.17.25-.29.36-.12.11-.24.21-.38.29-.14.09-.27.17-.39.26-.24.17-.47.33-.68.49-.21.15-.4.33-.56.52-.16.19-.29.41-.38.64-.1.27-.15.56-.14.85h4.11v-.98h-2.64c.14-.19.3-.36.48-.5.18-.14.37-.28.56-.4.19-.12.38-.25.57-.38.18-.12.35-.27.51-.43.15-.16.27-.34.36-.54.1-.23.14-.48.14-.73,0-.26-.05-.51-.16-.75-.1-.21-.24-.4-.42-.55-.18-.15-.39-.27-.61-.34-.24-.08-.48-.12-.73-.12-.31,0-.61.05-.89.17-.25.11-.47.27-.64.48-.17.21-.3.46-.38.72-.09.29-.13.59-.11.9Zm5.96,2.39v-3.6h.9c.27,0,.53.04.78.13.2.08.38.21.51.38.13.18.23.38.28.6.06.26.09.52.08.78,0,.27-.03.54-.12.8-.07.2-.18.38-.32.53-.13.13-.28.23-.46.29-.17.06-.35.09-.53.08h-1.12Zm-1.26-4.66v5.71h2.46c.39,0,.78-.07,1.14-.22.31-.14.59-.34.81-.6.22-.27.39-.58.48-.92.11-.37.16-.76.16-1.15,0-.42-.06-.84-.2-1.24-.12-.33-.3-.63-.54-.88-.23-.23-.51-.42-.82-.53-.33-.12-.68-.18-1.03-.18h-2.46Z" fill="currentColor"/></svg>';
+    '<svg id="measure" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path id="tool_54" d="M7.39,22.95c-.77,0-1.39-.62-1.39-1.39h0V2.46c0-.77.62-1.39,1.39-1.39h3.47c.77,0,1.39.62,1.39,1.39h0v19.11c0,.77-.62,1.39-1.39,1.39h-3.47ZM7.39,2.8v18.41c0,.19.16.35.35.35h2.78c.19,0,.35-.16.35-.35v-2.25c0-.19-.16-.35-.35-.35h-.69c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.35-.15.35-.34v-.7c0-.19-.15-.35-.35-.35h-.69c-.29-.01-.51-.26-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35v-.71c0-.19-.15-.35-.35-.35h-.69c-.29-.01-.51-.25-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35v-.69c0-.19-.16-.35-.35-.35h-.69c-.29-.01-.51-.26-.5-.54.01-.27.23-.49.5-.5h.69c.19,0,.35-.16.35-.35h0v-.7c0-.19-.15-.35-.35-.35h-.69c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.34-.15.35-.34v-.7c0-.19-.15-.34-.34-.34h-.7c-.29,0-.52-.23-.52-.52s.23-.52.52-.52h.69c.19,0,.34-.15.35-.34v-2.26c0-.19-.16-.35-.35-.35h-2.78c-.19,0-.35.16-.35.35ZM15.73,22.66l-1.39-1.39c-.2-.2-.2-.53,0-.74.1-.1.23-.15.37-.15h.35c.19,0,.35-.15.35-.35h0V3.7c0-.19-.16-.34-.35-.34h-.35c-.14,0-.27-.06-.37-.16-.2-.2-.2-.53,0-.73h0l1.39-1.39c.2-.2.53-.21.73,0h0l1.38,1.39c.1.1.15.23.15.37,0,.29-.23.52-.52.52h-.35c-.19,0-.34.15-.35.34v16.34c0,.19.16.35.35.35h.35c.29,0,.52.24.52.52,0,.14-.06.27-.15.37l-1.38,1.39c-.1.1-.23.15-.37.15s-.27-.05-.37-.15h0ZM8.42,3.84c0-.38.31-.69.69-.69s.69.31.69.69-.31.69-.69.69-.69-.31-.69-.69h0Z" fill="currentColor" /></svg>';
 
   const chartOptions: ApexOptions = {
     chart: {
@@ -210,6 +212,7 @@ export function setupChart(
                   });
                   chart.resetSeries(true, true);
                   normalNMode = false;
+                  nnActive.value = false;
                 } else {
                   if (iconNN) {
                     iconNN.classList.remove('primary--text');
@@ -227,6 +230,7 @@ export function setupChart(
                   });
                   chart.resetSeries(true, true);
                   normalNMode = true;
+                  nnActive.value = true;
                 }
               },
             },
@@ -240,11 +244,11 @@ export function setupChart(
                 const iconStart = document.querySelector('.custom-icon-start');
 
                 if (iconStart) {
-                  if (measurementActive) {
-                    measurementActive = false;
+                  if (measurementActive.value) {
+                    measurementActive.value = false;
                     iconStart.classList.remove('primary--text');
                   } else {
-                    measurementActive = true;
+                    measurementActive.value = true;
                     iconStart.classList.add('primary--text');
                   }
                 }
@@ -270,7 +274,7 @@ export function setupChart(
           chartContext: ApexChartContext,
           config: ApexConfig,
         ): void {
-          if (measurementActive) {
+          if (measurementActive.value) {
             if (config.dataPointIndex >= 0) {
               if (series?.length === 1 || currentMeasurment?.finished) {
                 const value = series[0].data[config.dataPointIndex];
@@ -283,6 +287,7 @@ export function setupChart(
                     chartContext,
                     series,
                     results,
+                    measurementActive,
                     value,
                   );
                 }
@@ -350,7 +355,7 @@ export function setupChart(
             }
           }
           if (iconStart) {
-            if (measurementActive) {
+            if (measurementActive.value) {
               iconStart.classList.add('primary--text');
             } else {
               iconStart.classList.remove('primary--text');
@@ -374,8 +379,14 @@ export function setupChart(
     },
     xaxis: {
       type: 'numeric',
+      title: {
+        text: `${String(app.vueI18n.t('heightProfile.distance'))}`,
+      },
     },
     yaxis: {
+      title: {
+        text: `${String(app.vueI18n.t('heightProfile.height'))}`,
+      },
       labels: {
         formatter(value: number): string {
           return Math.floor(value).toString();
@@ -393,6 +404,7 @@ export function setupChart(
     chartOptions,
     scaleFactorSave,
     scaleFactorInitial,
+    nnActive,
     destroy(): void {
       plugin.measurementLayer.removeAllFeatures();
       currentMeasurment?.destroy();

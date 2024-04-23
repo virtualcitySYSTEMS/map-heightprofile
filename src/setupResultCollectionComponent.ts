@@ -76,6 +76,39 @@ function createAddHeightProfileAction(
   };
 }
 
+async function updateGraphWindow(
+  app: VcsUiApp,
+  collectionComponent: CollectionComponentClass<HeightProfileResult>,
+  collection: Collection<HeightProfileResult>,
+  windowIdHeightProfile: string,
+  featureId: string,
+): Promise<void> {
+  if (app.windowManager.has(windowIdGraph)) {
+    const names = [];
+    for (const items of collectionComponent.selection.value) {
+      names.push(items.name);
+    }
+    app.windowManager.remove(windowIdGraph);
+
+    const props = {
+      featureId,
+      resultNames: names,
+    };
+    await nextTick();
+    if (names.length > 0) {
+      app.windowManager.add(
+        createGraphComponentOptions(
+          props,
+          collection,
+          windowIdHeightProfile,
+          app,
+        ),
+        name,
+      );
+    }
+  }
+}
+
 export default (
   app: VcsUiApp,
   feature: HeightProfileFeature,
@@ -177,9 +210,31 @@ export default (
   collectionComponent.addItemMapping({
     mappingFunction: (item, _c, listItem) => {
       listItem.actions = [...listItem.actions, showGraphAction(item, listItem)];
+      const { titleChanged } = listItem;
+      listItem.titleChanged = (title): void => {
+        titleChanged?.(title);
+        // eslint-disable-next-line no-void
+        void updateGraphWindow(
+          app,
+          collectionComponent,
+          collection,
+          windowIdHeightProfile,
+          featureId,
+        );
+      };
     },
     owner: name,
   });
+  const itemRemovedListener =
+    collectionComponent.collection.removed.addEventListener(async () => {
+      await updateGraphWindow(
+        app,
+        collectionComponent,
+        collection,
+        windowIdHeightProfile,
+        featureId,
+      );
+    });
 
   const selectionWatcher = watch(
     collectionComponent.selection,
@@ -213,6 +268,7 @@ export default (
 
   return {
     destroy: (): void => {
+      itemRemovedListener();
       selectionWatcher();
       collectionComponent.destroy();
     },

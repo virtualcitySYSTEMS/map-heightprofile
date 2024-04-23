@@ -35,22 +35,15 @@
           <VcsTextField
             id="vp-scaleFactor"
             type="number"
-            :step="0.01"
+            :step="1"
             :decimals="2"
-            :min="0.01"
+            :min="0.0"
             :title="$t('heightProfile.scaleFactor')"
             show-spin-buttons
             v-model.number="scaleFactorSave"
             @input="callScaleFactor"
+            :disabled="nnActive"
           />
-        </v-col>
-      </v-row>
-
-      <v-row no-gutters>
-        <v-col>
-          <VcsLabel>
-            {{ $t('heightProfile.helperText.part1') }}
-          </VcsLabel>
         </v-col>
       </v-row>
     </div>
@@ -127,6 +120,7 @@
         chartOptions,
         scaleFactorSave,
         scaleFactorInitial,
+        nnActive,
         destroy,
       } = setupChart(app, results, props.resultNames);
 
@@ -152,6 +146,7 @@
         chartOptions,
         series,
         scaleFactorSave,
+        nnActive,
       };
     },
   });
@@ -212,6 +207,7 @@
     transform: scale(1) !important;
     width: 20px !important;
     height: 20px !important;
+    margin-left: 0.3em;
   }
   .custom-icon.apexcharts-selected svg {
     fill: var(--v-primary-base) !important;

@@ -95,7 +95,7 @@ export function createEditAction(
 ): { action: VcsAction; destroy: () => void } {
   const action = reactive<VcsAction>({
     name: 'heightProfile.edit',
-    title: 'heightProfile.create',
+    title: 'heightProfile.edit',
     icon: '$vcsEditVertices',
     disabled: plugin.session.value?.type === SessionType.CREATE,
     active: plugin.session.value?.type === SessionType.EDIT_GEOMETRY,

@@ -10,6 +10,7 @@ import {
   Scene,
   sampleTerrainMostDetailed,
 } from '@vcmap-cesium/engine';
+import { NotificationType, VcsUiApp } from '@vcmap/ui';
 import { ElevationType } from '../setupResultCollectionComponent.js';
 
 type Result<T, E = Error> =
@@ -47,6 +48,7 @@ export function createHeightProfileCalculation(
   elevationType: ElevationType,
   maxNumberOfPoints: number,
   scene: Scene,
+  app: VcsUiApp,
 ): HeightProfileCalculation {
   let resolutionValue = resolution;
   const coordinates = geometry.getCoordinates();
@@ -90,6 +92,11 @@ export function createHeightProfileCalculation(
       (totalSurfaceDistance / maxNumberOfPoints).toFixed(1),
     );
     totalNumberOfPoints = Math.floor(totalSurfaceDistance / resolutionValue);
+  } else if (totalNumberOfPoints <= 1) {
+    app.notifier.add({
+      type: NotificationType.WARNING,
+      message: String('heightProfile.resolutionProblem'),
+    });
   }
 
   let combindedTime = 0;

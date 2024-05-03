@@ -134,9 +134,13 @@
         }
       }
 
+      const themeChanged = app.themeChanged.addEventListener(() => {
+        demoChart.value?.chart.resetSeries(true, true);
+      });
       onUnmounted(() => {
         destroy();
         layerListener();
+        themeChanged();
       });
 
       return {
@@ -169,9 +173,6 @@
   }
   .apexcharts-menu-icon {
     transform: scale(1) !important;
-    border-left: 2px solid #6e8192;
-    padding-left: 1em;
-    margin-left: 1em;
   }
   .apexcharts-menu-icon,
   .apexcharts-reset-icon,
@@ -184,21 +185,15 @@
   }
   .custom-icon-nn {
     transform: scale(1) !important;
-    margin-right: 1em;
-    border-left: 2px solid #6e8192;
-    padding-left: 1em;
-    margin-left: 1em;
+    z-index: 5;
   }
   .custom-icon-start svg {
     width: 20px !important;
     height: 20px !important;
+    z-index: 5;
   }
   .custom-icon-start {
-    border-left: 2px solid #6e8192;
-    padding-left: 1em;
-    margin-left: 1em;
     fill: #6e8192;
-    margin-right: 1em;
   }
   .custom-icon-clear {
     fill: #6e8192;
@@ -207,7 +202,6 @@
     transform: scale(1) !important;
     width: 20px !important;
     height: 20px !important;
-    margin-left: 0.3em;
   }
   .custom-icon.apexcharts-selected svg {
     fill: var(--v-primary-base) !important;
@@ -235,5 +229,40 @@
   }
   .distance-top {
     margin-top: 0.5em;
+  }
+  .apexcharts-xaxis,
+  .apexcharts-yaxis,
+  .apexcharts-legend-text {
+    stroke: var(--v-base-base) !important;
+    color: unset !important;
+  }
+  .apexcharts-xaxis-title,
+  .apexcharts-yaxis-title,
+  .apexcharts-xaxis,
+  .apexcharts-yaxis {
+    stroke: var(--v-base-base) !important;
+    stroke-width: 0.3px;
+  }
+  .apexcharts-tooltip {
+    background-color: var(--v-base-lighten4) !important;
+    color: unset !important;
+    border-color: var(--v-base-lighten4) !important;
+  }
+  .apexcharts-tooltip-title {
+    background-color: var(--v-base-lighten2) !important;
+    color: unset !important;
+  }
+
+  .apexcharts-menu-open {
+    color: black !important;
+  }
+  .apexcharts-xaxistooltip {
+    color: var(--v-base-darken4) !important;
+    background-color: var(--v-base-lighten4) !important;
+    z-index: 5;
+  }
+  .custom-icon-spacer {
+    cursor: default !important;
+    z-index: 0;
   }
 </style>

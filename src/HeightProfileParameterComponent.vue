@@ -68,7 +68,14 @@
   </v-sheet>
 </template>
 <script lang="ts">
-  import { Ref, defineComponent, inject, onUnmounted, ref } from 'vue';
+  import {
+    Ref,
+    defineComponent,
+    inject,
+    onUnmounted,
+    ref,
+    onMounted,
+  } from 'vue';
   import {
     VCol,
     VRow,
@@ -93,7 +100,6 @@
     CollectionComponentListItem,
   } from '@vcmap/ui';
 
-  import { Scene } from '@vcmap-cesium/engine';
   import { CesiumMap, Collection } from '@vcmap/core';
   import { LineString } from 'ol/geom.js';
   import { name } from '../package.json';
@@ -139,7 +145,7 @@
       const elevationType = ref('both') as Ref<ElevationType>;
       const dialogVisible = ref(false);
       const progressBar = ref(0);
-      const disabled = ref(true);
+      const disabled = ref(!(app.maps.activeMap instanceof CesiumMap));
       const mapListener = app.maps.mapActivated.addEventListener((item) => {
         disabled.value = !(item instanceof CesiumMap);
       });
@@ -149,24 +155,38 @@
       const collectionComponent = inject(
         'collectionComponent',
       ) as CollectionComponentClass<HeightProfileResult>;
-      const terrainselectvalues: Array<{ text: string; value: string }> = [
+      const terrainselectvalues: Array<{
+        text: string;
+        value: string;
+        disabled: boolean;
+      }> = [
         {
           value: 'terrain',
           text: 'heightProfile.classificationType.DGM',
+          disabled: false, // set if terrain in map
         },
         {
           value: 'both',
           text: 'heightProfile.classificationType.DOM',
+          disabled: false,
         },
       ];
 
-      let scene: Scene | undefined;
-      if (app.maps.activeMap instanceof CesiumMap) {
-        disabled.value = false;
-        scene = app.maps.activeMap.getScene();
+      function checkTerrain(): void {
+        if (app.maps.activeMap instanceof CesiumMap) {
+          const scene = app.maps.activeMap.getScene()!;
+          terrainselectvalues[0].disabled =
+            !scene.terrainProvider.hasVertexNormals;
+        }
       }
+
+      const layerListener = app.layers.stateChanged.addEventListener(() => {
+        checkTerrain();
+      });
+
       function calculateHeightProfile(): () => void {
-        if (scene) {
+        if (app.maps.activeMap instanceof CesiumMap) {
+          const scene = app.maps.activeMap.getScene()!;
           const geometry = feature?.getGeometry() as LineString;
           const { ready, cancel, progress, resolutionValue } =
             createHeightProfileCalculation(
@@ -175,6 +195,7 @@
               elevationType.value as ElevationType,
               1000,
               scene,
+              app,
             );
           dialogVisible.value = true;
           progress.addEventListener((event) => {
@@ -259,6 +280,10 @@
       };
       onUnmounted(() => {
         mapListener();
+        layerListener();
+      });
+      onMounted(() => {
+        checkTerrain();
       });
 
       return {

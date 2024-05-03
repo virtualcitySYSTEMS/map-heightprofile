@@ -43,6 +43,7 @@ type XAxisAnnotation = {
     position: 'top' | 'center' | 'bottom';
     orientation: 'horizontal' | 'vertical';
     text: string;
+    style?: { color: string; background: string };
   };
 };
 

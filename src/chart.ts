@@ -63,6 +63,12 @@ export function setupChart(
         (chartContext.w.globals.maxX - chartContext.w.globals.minX)) /
       ((chartContext.w.globals.maxY - chartContext.w.globals.minY) *
         chartContext.w.globals.gridWidth);
+    const background = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue('--v-base-lighten4');
+    const text = getComputedStyle(document.documentElement).getPropertyValue(
+      '--v-base-darken4',
+    );
 
     chartContext.addXaxisAnnotation(
       {
@@ -72,6 +78,10 @@ export function setupChart(
           position: 'top',
           orientation: 'horizontal',
           text: `${String(app.vueI18n.t('heightProfile.scaleFactor'))}: ${scaleFactor.toFixed(2).toString()}`,
+          style: {
+            color: text.trim(),
+            background: background.trim(),
+          },
         },
       },
       false,
@@ -163,8 +173,15 @@ export function setupChart(
           reset: false,
           customIcons: [
             {
-              icon: iconReset,
+              icon: '|',
               index: 4,
+              title: '',
+              class: 'custom-icon-spacer',
+              click(): void {},
+            },
+            {
+              icon: iconReset,
+              index: 5,
               title: `${String(app.vueI18n.t('heightProfile.reset'))}`,
               class: 'custom-icon-reset',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -190,8 +207,15 @@ export function setupChart(
               },
             },
             {
+              icon: '|',
+              index: 6,
+              title: '',
+              class: 'custom-icon-spacer',
+              click(): void {},
+            },
+            {
               icon: 'NN',
-              index: 5,
+              index: 7,
               title: `${String(app.vueI18n.t('heightProfile.nn'))}`,
               class: 'custom-icon-nn',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -235,8 +259,15 @@ export function setupChart(
               },
             },
             {
+              icon: '|',
+              index: 8,
+              title: '',
+              class: 'custom-icon-spacer',
+              click(): void {},
+            },
+            {
               icon: iconMeasure,
-              index: 6,
+              index: 9,
               title: `${String(app.vueI18n.t('heightProfile.measurement.start'))}`,
               class: 'custom-icon-start',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -255,8 +286,15 @@ export function setupChart(
               },
             },
             {
+              icon: '|',
+              index: 10,
+              title: '',
+              class: 'custom-icon-spacer',
+              click(): void {},
+            },
+            {
               icon: iconClear,
-              index: 7,
+              index: 10,
               title: `${String(app.vueI18n.t('heightProfile.measurement.clear'))}`,
               class: 'custom-icon-clear',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -363,6 +401,9 @@ export function setupChart(
           }
         },
       },
+    },
+    theme: {
+      mode: 'light',
     },
     dataLabels: {
       enabled: false,

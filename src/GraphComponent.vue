@@ -4,7 +4,7 @@
       <v-col>
         <VCard class="spaceFormat">
           <VcsLabel html-for="vp-resolution"
-            ><v-icon icon="mdi-alert">mdi-alert</v-icon>
+            ><v-icon class="marginClass" icon="mdi-alert">mdi-alert</v-icon>
             {{ $t('heightProfile.layerWarning') }}
           </VcsLabel>
         </VCard>
@@ -12,11 +12,18 @@
     </v-row>
     <div class="distance-top" id="chart">
       <apexchart
+        id="apexChartId"
         ref="demoChart"
         type="line"
         height="350"
         :options="chartOptions"
         :series="series"
+        @click="apexClick"
+        @mounted="apexMounted"
+        @animationEnd="apexAnimationEnd"
+        @mouseMove="apexMouseMove"
+        @mouseLeave="apexMouseLeave"
+        @scrolled="apexScrolled"
       >
       </apexchart>
     </div>
@@ -25,8 +32,7 @@
         <v-col class="width-constraint">
           <VcsLabel
             html-for="vp-scaleFactor"
-            :title="$t('heightProfile.scaleFactor')"
-            :dense="true"
+            :title="$t('heightProfile.scaleFactorTooltip')"
           >
             {{ $t('heightProfile.scaleFactor') }}
           </VcsLabel>
@@ -36,13 +42,15 @@
             id="vp-scaleFactor"
             type="number"
             :step="1"
-            :decimals="2"
             :min="0.0"
-            :title="$t('heightProfile.scaleFactor')"
+            :tooltip="$t('heightProfile.scaleFactorTooltip')"
             show-spin-buttons
-            v-model.number="scaleFactorSave"
+            :decimals="2"
+            @focusin="scaleFactorManuallySet = true"
+            @focusout="scaleFactorManuallySet = false"
             @input="callScaleFactor"
             :disabled="nnActive"
+            v-model.number="scaleFactorSave"
           />
         </v-col>
       </v-row>
@@ -51,17 +59,27 @@
 </template>
 <script lang="ts">
   import { defineComponent, inject, onUnmounted, Ref, ref } from 'vue';
-  import { VCol, VContainer, VRow, VCard, VIcon } from 'vuetify/lib';
-  import { VcsLabel, VcsTextField, VcsUiApp } from '@vcmap/ui';
-  import VueApexCharts from 'vue-apexcharts';
+  import { VCol, VContainer, VRow, VCard, VIcon } from 'vuetify/components';
+  import {
+    NotificationType,
+    VcsLabel,
+    VcsTextField,
+    VcsUiApp,
+  } from '@vcmap/ui';
+  import VueApexCharts from 'vue3-apexcharts';
   import { HeightProfilePlugin } from 'src';
+  import type { ApexChartContext, ChartObject, ApexConfig } from 'apexcharts';
+  import { ChartMeasurement } from 'apexcharts';
   import { name } from '../package.json';
   import {
     HeightProfileFeature,
     resultCollectionSymbol,
   } from './heightProfileFeature.js';
-  import { setupChart } from './chart.js';
-  import { type ApexChartContext } from './helper/measurementHelper.js';
+  import { addScaleFactorToGraph, placeTooltip, setupChart } from './chart.js';
+  import {
+    addMeasurementAnnotationsToGraph,
+    startChartMeasurement,
+  } from './helper/measurementHelper.js';
   import { setScaleFactor } from './helper/scaleFactorHelper.js';
 
   export default defineComponent({
@@ -95,6 +113,15 @@
       ) as HeightProfileFeature;
       const results = feature[resultCollectionSymbol];
 
+      const measurementActive = ref(false);
+      const scaleFactorManuallySet = ref(false);
+      const currentMeasurement: Ref<ChartMeasurement | undefined> =
+        ref(undefined);
+      const normalNMode = ref(false);
+
+      const scaleFactorSave: Ref<number> = ref(0);
+      const scaleFactorInitial: Ref<number> = ref(0);
+
       function checkLayers(): boolean {
         return [...results].some((result) => {
           return result.layerNames.some((layerName) => {
@@ -110,34 +137,167 @@
         layerWarning.value = checkLayers();
       });
 
-      interface ChartObject {
-        chart: ApexChartContext;
-      }
-
       const demoChart: Ref<ChartObject | undefined> = ref();
-      const {
-        series,
-        chartOptions,
-        scaleFactorSave,
+
+      const { series, chartOptions, nnActive, destroy } = setupChart(
+        app,
+        results,
+        props.resultNames,
         scaleFactorInitial,
-        nnActive,
-        destroy,
-      } = setupChart(app, results, props.resultNames);
+        scaleFactorSave,
+        currentMeasurement,
+        normalNMode,
+        measurementActive,
+        scaleFactorManuallySet,
+      );
 
       function callScaleFactor(): void {
         if (demoChart.value) {
-          setScaleFactor(
-            demoChart.value.chart,
-            scaleFactorSave,
-            scaleFactorInitial,
-          );
+          setScaleFactor(demoChart.value, scaleFactorSave, scaleFactorInitial);
         }
       }
 
       const themeChanged = app.themeChanged.addEventListener(() => {
-        demoChart.value?.chart.resetSeries(true, true);
+        demoChart.value?.resetSeries();
       });
+
+      function apexClick(
+        _event: object,
+        _chartContext: ApexChartContext,
+        config: ApexConfig,
+      ): void {
+        if (measurementActive.value) {
+          if (config.dataPointIndex >= 0) {
+            if (series?.length === 1 || currentMeasurement.value?.finished) {
+              const value = series[0].data[config.dataPointIndex];
+              if (
+                currentMeasurement?.value &&
+                !currentMeasurement.value.finished
+              ) {
+                currentMeasurement.value.addValue(value);
+              } else {
+                if (currentMeasurement?.value) {
+                  currentMeasurement.value.destroy();
+                }
+
+                currentMeasurement.value = startChartMeasurement(
+                  app,
+                  demoChart.value!,
+                  series,
+                  results,
+                  measurementActive,
+                  value,
+                );
+              }
+              if (demoChart.value) {
+                addScaleFactorToGraph(
+                  demoChart.value,
+                  app,
+                  scaleFactorInitial,
+                  scaleFactorSave,
+                  scaleFactorManuallySet,
+                );
+              }
+            } else {
+              app.notifier.add({
+                type: NotificationType.WARNING,
+                message: String('heightProfile.measurementWarning'),
+              });
+            }
+          }
+        }
+      }
+
+      function apexMounted(): void {
+        if (demoChart?.value) {
+          addScaleFactorToGraph(
+            demoChart.value,
+            app,
+            scaleFactorInitial,
+            scaleFactorSave,
+            scaleFactorManuallySet,
+            true,
+          );
+        }
+      }
+
+      function apexAnimationEnd(): void {
+        if (demoChart?.value) {
+          addScaleFactorToGraph(
+            demoChart.value,
+            app,
+            scaleFactorInitial,
+            scaleFactorSave,
+            scaleFactorManuallySet,
+          );
+
+          if (currentMeasurement.value?.values) {
+            addMeasurementAnnotationsToGraph(
+              currentMeasurement.value.values,
+              demoChart.value,
+              app,
+            );
+          }
+        }
+        const iconNN = document.querySelector('.custom-icon-nn');
+        const iconStart = document.querySelector('.custom-icon-start');
+        if (iconNN) {
+          if (normalNMode.value) {
+            iconNN.classList.add('primary--text');
+          } else {
+            iconNN.classList.remove('primary--text');
+          }
+        }
+        if (iconStart) {
+          if (measurementActive.value) {
+            iconStart.classList.add('primary--text');
+          } else {
+            iconStart.classList.remove('primary--text');
+          }
+        }
+      }
+
+      function apexMouseMove(
+        _event: object,
+        _chartContext: ApexChartContext,
+        config: ApexConfig,
+      ): void {
+        if (config.dataPointIndex >= 0) {
+          const values = results.getByKey(series[config.seriesIndex].id);
+          const point = values?.resultPoints[config.dataPointIndex];
+          if (point) {
+            placeTooltip(plugin, point);
+          }
+        } else {
+          plugin.measurementLayer.removeFeaturesById(['_tooltip']);
+        }
+      }
+
+      function apexMouseLeave(): void {
+        plugin.layer.removeFeaturesById(['_tooltip']);
+      }
+
+      function apexScrolled(): void {
+        if (demoChart.value) {
+          addScaleFactorToGraph(
+            demoChart.value,
+            app,
+            scaleFactorInitial,
+            scaleFactorSave,
+            scaleFactorManuallySet,
+          );
+          if (currentMeasurement.value!.values) {
+            addMeasurementAnnotationsToGraph(
+              currentMeasurement.value!.values,
+              demoChart.value,
+              app,
+            );
+          }
+        }
+      }
+
       onUnmounted(() => {
+        currentMeasurement.value = undefined;
         destroy();
         layerListener();
         themeChanged();
@@ -151,18 +311,23 @@
         series,
         scaleFactorSave,
         nnActive,
+        apexClick,
+        apexMounted,
+        apexAnimationEnd,
+        apexMouseMove,
+        apexMouseLeave,
+        apexScrolled,
+        scaleFactorManuallySet,
       };
     },
   });
 </script>
 <style lang="scss">
-  .apexcharts-zoomin-icon svg,
-  .apexcharts-zoomout-icon svg {
-    transform: scale(1) !important;
-    height: 20px !important;
-    width: 20px !important;
+  .marginClass {
+    margin-left: calc(var(--v-vcs-font-size) * 1);
+    margin-right: calc(var(--v-vcs-font-size) * 1);
   }
-
+  .apexcharts-zoomin-icon svg,
   .apexcharts-pan-icon svg {
     height: 20px !important;
     width: 20px !important;
@@ -170,6 +335,96 @@
   .apexcharts-menu-icon svg {
     width: 20px !important;
     height: 20px !important;
+  }
+
+  .custom-icon-start svg {
+    width: 20px !important;
+    height: 20px !important;
+    z-index: 5;
+  }
+  .custom-icon-start {
+    fill: #6e8192;
+  }
+  .custom-icon-clear {
+    fill: #6e8192;
+  }
+
+  .custom-icon.apexcharts-selected svg {
+    fill: rgb(var(--v-theme-primary)) !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .apexcharts-selected svg {
+    fill: rgb(var(--v-theme-primary)) !important;
+  }
+  .apexcharts-toolbar {
+    max-width: 600px !important;
+    top: -5px !important;
+    right: 30px !important;
+  }
+  .apexcharts-pan-icon.apexcharts-selected svg {
+    stroke: rgb(var(--v-theme-primary)) !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .spaceFormat {
+    margin-bottom: 1em;
+  }
+  .width-constraint {
+    max-width: 150px;
+  }
+  .distance-top {
+    margin-top: 0.5em;
+  }
+  .apexcharts-xaxis,
+  .apexcharts-yaxis,
+  .apexcharts-legend-text {
+    stroke: rgb(var(--v-theme-base)) !important;
+    color: unset !important;
+  }
+  .apexcharts-xaxis-title,
+  .apexcharts-yaxis-title,
+  .apexcharts-xaxis,
+  .apexcharts-yaxis {
+    stroke: rgb(var(--v-theme-base)) !important;
+    stroke-width: 0.3px;
+  }
+  .apexcharts-tooltip {
+    background-color: rgb(var(--v-theme-base-lighten-4)) !important;
+    color: unset !important;
+    border-color: rgb(var(--v-theme-base-lighten-4)) !important;
+  }
+  .apexcharts-tooltip-title {
+    background-color: rgb(var(--v-theme-base-lighten-2)) !important;
+    color: unset !important;
+  }
+
+  .apexcharts-menu-open {
+    color: black !important;
+  }
+  .apexcharts-xaxistooltip {
+    color: rgb(var(--v-theme-base-darken-4)) !important;
+    background-color: rgb(var(--v-theme-base-lighten-4)) !important;
+    z-index: 5;
+  }
+  .custom-icon-spacer {
+    cursor: default !important;
+    z-index: 0;
+  }
+  .primary--text {
+    color: rgb(var(--v-theme-primary)) !important;
+  }
+
+  .apexcharts-zoomin-icon,
+  .apexcharts-zoomout-icon {
+    transform: scale(1) !important;
+  }
+  .custom-icon-reset {
+    transform: scale(0.7) !important;
+  }
+  .custom-icon-start,
+  .custom-icon-clear {
+    transform: scale(0.8) !important;
   }
   .apexcharts-menu-icon {
     transform: scale(1) !important;
@@ -187,82 +442,25 @@
     transform: scale(1) !important;
     z-index: 5;
   }
-  .custom-icon-start svg {
-    width: 20px !important;
-    height: 20px !important;
-    z-index: 5;
-  }
-  .custom-icon-start {
-    fill: #6e8192;
-  }
-  .custom-icon-clear {
-    fill: #6e8192;
-  }
   .custom-icon-clear svg {
     transform: scale(1) !important;
     width: 20px !important;
     height: 20px !important;
   }
-  .custom-icon.apexcharts-selected svg {
-    fill: var(--v-primary-base) !important;
-    width: 20px !important;
-    height: 20px !important;
-  }
-  .apexcharts-selected svg {
-    fill: var(--v-primary-base) !important;
-  }
-  .apexcharts-toolbar {
-    max-width: 600px !important;
-    top: -5px !important;
-    right: 30px !important;
-  }
-  .apexcharts-pan-icon.apexcharts-selected svg {
-    stroke: var(--v-primary-base) !important;
-    width: 20px !important;
-    height: 20px !important;
-  }
-  .spaceFormat {
-    margin-bottom: 1em;
-  }
-  .width-constraint {
-    max-width: 150px;
-  }
-  .distance-top {
-    margin-top: 0.5em;
-  }
-  .apexcharts-xaxis,
-  .apexcharts-yaxis,
-  .apexcharts-legend-text {
-    stroke: var(--v-base-base) !important;
-    color: unset !important;
-  }
-  .apexcharts-xaxis-title,
-  .apexcharts-yaxis-title,
-  .apexcharts-xaxis,
-  .apexcharts-yaxis {
-    stroke: var(--v-base-base) !important;
-    stroke-width: 0.3px;
-  }
-  .apexcharts-tooltip {
-    background-color: var(--v-base-lighten4) !important;
-    color: unset !important;
-    border-color: var(--v-base-lighten4) !important;
-  }
-  .apexcharts-tooltip-title {
-    background-color: var(--v-base-lighten2) !important;
-    color: unset !important;
-  }
 
-  .apexcharts-menu-open {
-    color: black !important;
-  }
-  .apexcharts-xaxistooltip {
-    color: var(--v-base-darken4) !important;
-    background-color: var(--v-base-lighten4) !important;
-    z-index: 5;
-  }
-  .custom-icon-spacer {
-    cursor: default !important;
-    z-index: 0;
+  .apexcharts-menu-icon,
+  .apexcharts-pan-icon,
+  .apexcharts-reset-icon,
+  .apexcharts-selection-icon,
+  .apexcharts-toolbar-custom-icon,
+  .apexcharts-zoom-icon,
+  .apexcharts-zoomin-icon,
+  .apexcharts-zoomout-icon {
+    cursor: pointer;
+    width: 25px !important;
+    height: 20px;
+    line-height: 24px;
+    color: #6e8192;
+    text-align: center;
   }
 </style>

@@ -118,9 +118,11 @@ describe('VcsPlugin Interface test', () => {
       pluginInstance2?.destroy?.();
     });
 
-    it('should override the plugin correctly', () => {
+    it('should override the plugin correctly', async () => {
       expect(() => app.plugins.override(pluginInstance2!)).to.not.throw;
+      await sleep(0);
       app.plugins.override(pluginInstance2!);
+      await sleep(0);
       expect(app.plugins.getByKey(packageJSON.name)).to.have.property(
         testPropSymbol,
         'test',
@@ -130,6 +132,7 @@ describe('VcsPlugin Interface test', () => {
 
     it('should reincarnate the plugin correctly', async () => {
       expect(() => app.plugins.remove(pluginInstance2!)).to.not.throw;
+      await sleep(0);
       app.plugins.remove(pluginInstance2!);
       await sleep(0);
       expect(app.plugins.getByKey(packageJSON.name)).not.to.have.property(

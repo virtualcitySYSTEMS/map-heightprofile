@@ -42,10 +42,9 @@
     provide,
     ref,
   } from 'vue';
-  import { VContainer, VSheet } from 'vuetify/lib';
+  import { VContainer, VSheet } from 'vuetify/components';
   import {
     getDefaultProjection,
-    getFlatCoordinatesFromGeometry,
     mercatorProjection,
     Projection,
     SessionType,
@@ -70,6 +69,7 @@
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
 
+  export const windowIdHeightProfileEditor = 'heightProfileEditor_window_id';
   export default defineComponent({
     name: 'HeightProfileEditorComponent',
     components: {
@@ -102,26 +102,20 @@
         )) as HeightProfileFeature;
 
       function setPointsFromFeature(featureItem: HeightProfileFeature): void {
-        const coords = getFlatCoordinatesFromGeometry(
-          featureItem.getGeometry()!,
-        );
-        const positions = [];
-        for (const coord of coords) {
-          if (coord) {
-            const coordP = Projection.transform(
-              getDefaultProjection(),
-              mercatorProjection,
-              coord,
-            );
-            positions.push({
-              id: `Punkt ${positions.length + 1}`,
-              name: undefined,
-              x: coordP[0].toFixed(2),
-              y: coordP[1].toFixed(2),
-            });
-          }
-        }
-        points.value = positions;
+        const coords = featureItem.getGeometry()?.getCoordinates() ?? [];
+        points.value = coords.map((coord) => {
+          const coordP = Projection.transform(
+            getDefaultProjection(),
+            mercatorProjection,
+            coord,
+          );
+          return {
+            id: `Punkt ${coords.length + 1}`,
+            name: undefined,
+            x: coordP[0].toFixed(2),
+            y: coordP[1].toFixed(2),
+          };
+        });
       }
 
       if (!feature) {
@@ -133,11 +127,16 @@
       const currentIsPersisted = ref(
         plugin.heightProfileCategory.collection.hasKey(props.featureId),
       );
-      if (currentIsPersisted.value) {
+      if (
+        currentIsPersisted.value &&
+        plugin.heightProfileCategory.selection.value.length > 0
+      ) {
         if (feature) {
-          (attrs['window-state'] as WindowState).headerTitle = String(
-            feature.getProperty('name'),
-          );
+          if ((attrs['window-state'] as WindowState)?.headerTitle) {
+            (attrs['window-state'] as WindowState).headerTitle = String(
+              feature.getProperty('name'),
+            );
+          }
         }
       }
 
@@ -178,17 +177,17 @@
         plugin.heightProfileCategory,
       );
 
-      const headers: Array<{ text: string; value: string }> = [
+      const headers: Array<{ title: string; value: string }> = [
         {
-          text: 'heightProfile.pointsMultiple',
+          title: 'heightProfile.pointsMultiple',
           value: 'id',
         },
         {
-          text: 'X',
+          title: 'X',
           value: 'x',
         },
         {
-          text: 'Y',
+          title: 'Y',
           value: 'y',
         },
       ];

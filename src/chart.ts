@@ -2,28 +2,25 @@ import { Collection, Projection } from '@vcmap/core';
 import { Coordinate } from 'ol/coordinate';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
-import { NotificationType, VcsUiApp } from '@vcmap/ui';
-import { ApexOptions } from 'apexcharts';
+import { VcsUiApp } from '@vcmap/ui';
+import {
+  ApexConfig,
+  ApexOptions,
+  ChartMeasurement,
+  ChartObject,
+  SeriesEntry,
+} from 'apexcharts';
 import { Ref, ref } from 'vue';
+import { getLogger } from '@vcsuite/logger';
 import { name } from '../package.json';
 import type { HeightProfilePlugin } from './index.js';
 import type { HeightProfileResult } from './setupResultCollectionComponent.js';
-import {
-  ApexChartContext,
-  SeriesEntry,
-  startChartMeasurement,
-  ChartMeasurement,
-  addMeasurementAnnotationsToGraph,
-} from './helper/measurementHelper.js';
+import { addMeasurementAnnotationsToGraph } from './helper/measurementHelper.js';
 
-type ApexConfig = {
-  config: object;
-  dataPointIndex: number;
-  globals: object;
-  seriesIndex: number;
-};
-
-function placeTooltip(plugin: HeightProfilePlugin, point: Coordinate): void {
+export function placeTooltip(
+  plugin: HeightProfilePlugin,
+  point: Coordinate,
+): void {
   plugin.measurementLayer.removeFeaturesById(['_tooltip']);
   const feature = new Feature({
     geometry: new Point(Projection.wgs84ToMercator(point)),
@@ -34,65 +31,82 @@ function placeTooltip(plugin: HeightProfilePlugin, point: Coordinate): void {
   plugin.measurementLayer.addFeatures([feature]);
 }
 
+export function addScaleFactorToGraph(
+  chartContext: ChartObject,
+  app: VcsUiApp,
+  scaleFactorInitial: Ref<number>,
+  scaleFactorSave: Ref<number>,
+  scaleFactorManuallySet: Ref<boolean>,
+  initial = false,
+): void {
+  let scaleFactor;
+  if (chartContext.w) {
+    scaleFactor =
+      (chartContext.w.globals.gridHeight *
+        (chartContext.w.globals.maxX - chartContext.w.globals.minX)) /
+      ((chartContext.w.globals.maxY - chartContext.w.globals.minY) *
+        chartContext.w.globals.gridWidth);
+  } else {
+    scaleFactor =
+      (chartContext.chart.w.globals.gridHeight *
+        (chartContext.chart.w.globals.maxX -
+          chartContext.chart.w.globals.minX)) /
+      ((chartContext.chart.w.globals.maxY - chartContext.chart.w.globals.minY) *
+        chartContext.chart.w.globals.gridWidth);
+  }
+
+  const background = getComputedStyle(
+    document.documentElement,
+  ).getPropertyValue('--v-theme-base-lighten-4');
+  const text = getComputedStyle(document.documentElement).getPropertyValue(
+    '--v-theme-base-darken-4',
+  );
+
+  chartContext.addXaxisAnnotation(
+    {
+      x: chartContext.w
+        ? chartContext.w.globals.maxX
+        : chartContext.chart.w.globals.maxX,
+      label: {
+        textAnchor: 'end',
+        position: 'top',
+        orientation: 'horizontal',
+        text: `${String(app.vueI18n.t('heightProfile.scaleFactor'))}: ${scaleFactor.toFixed(2).toString()}`,
+        style: {
+          color: `rgb(${text})`,
+          background: `rgb(${background})`,
+        },
+      },
+    },
+    false,
+  );
+  if (initial) {
+    scaleFactorInitial.value = Math.round(scaleFactor * 100) / 100;
+  }
+  if (!scaleFactorManuallySet.value) {
+    scaleFactorSave.value = Math.round(scaleFactor * 100) / 100;
+  }
+}
+
 export const windowIdGraph = 'heightProfileGraph_window_id';
 
 export function setupChart(
   app: VcsUiApp,
   results: Collection<HeightProfileResult>,
   resultNames: string[],
+  scaleFactorInitial: Ref<number>,
+  scaleFactorSave: Ref<number>,
+  currentMeasurement: Ref<ChartMeasurement | undefined>,
+  normalNMode: Ref<boolean>,
+  measurementActive: Ref<boolean>,
+  scaleFactorManuallySet: Ref<boolean>,
 ): {
   series: SeriesEntry[];
   chartOptions: ApexOptions;
-  scaleFactorSave: Ref<number>;
-  scaleFactorInitial: Ref<number>;
   nnActive: Ref<boolean>;
   destroy: () => void;
 } {
-  let currentMeasurment: ChartMeasurement | undefined;
-  const measurementActive: Ref<boolean> = ref(false);
-  const scaleFactorSave: Ref<number> = ref(0);
-  const scaleFactorInitial: Ref<number> = ref(0);
   const nnActive: Ref<boolean> = ref(false);
-
-  function addScaleFactorToGraph(
-    chartContext: ApexChartContext,
-    initial = false,
-  ): void {
-    const scaleFactor =
-      (chartContext.w.globals.gridHeight *
-        (chartContext.w.globals.maxX - chartContext.w.globals.minX)) /
-      ((chartContext.w.globals.maxY - chartContext.w.globals.minY) *
-        chartContext.w.globals.gridWidth);
-    const background = getComputedStyle(
-      document.documentElement,
-    ).getPropertyValue('--v-base-lighten4');
-    const text = getComputedStyle(document.documentElement).getPropertyValue(
-      '--v-base-darken4',
-    );
-
-    chartContext.addXaxisAnnotation(
-      {
-        x: chartContext.w.globals.maxX,
-        label: {
-          textAnchor: 'end',
-          position: 'top',
-          orientation: 'horizontal',
-          text: `${String(app.vueI18n.t('heightProfile.scaleFactor'))}: ${scaleFactor.toFixed(2).toString()}`,
-          style: {
-            color: text.trim(),
-            background: background.trim(),
-          },
-        },
-      },
-      false,
-    );
-    if (initial) {
-      scaleFactorInitial.value = scaleFactor;
-    }
-    scaleFactorSave.value = scaleFactor;
-  }
-
-  let normalNMode = false;
   const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
   const series = resultNames
     .map((id): SeriesEntry | undefined => {
@@ -185,21 +199,27 @@ export function setupChart(
               title: `${String(app.vueI18n.t('heightProfile.reset'))}`,
               class: 'custom-icon-reset',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              click(chart: ApexChartContext, _options, _e): void {
-                chart.updateOptions({
-                  yaxis: {
-                    labels: {
-                      formatter(value: number): string {
-                        return Math.floor(value).toString();
+              click(chart: ChartObject, _options, _e): void {
+                chart
+                  .updateOptions({
+                    yaxis: {
+                      labels: {
+                        formatter(value: number): string {
+                          return Math.floor(value).toString();
+                        },
                       },
                     },
-                  },
-                });
+                  })
+                  .catch(() => {
+                    getLogger(name).error('failed to update options');
+                  });
 
-                chart.resetSeries(true, true);
-                if (currentMeasurment?.values) {
+                normalNMode.value = false;
+                nnActive.value = false;
+                chart.resetSeries();
+                if (currentMeasurement.value?.values) {
                   addMeasurementAnnotationsToGraph(
-                    currentMeasurment.values,
+                    currentMeasurement.value.values,
                     chart,
                     app,
                   );
@@ -219,41 +239,48 @@ export function setupChart(
               title: `${String(app.vueI18n.t('heightProfile.nn'))}`,
               class: 'custom-icon-nn',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              click(chart: ApexChartContext, _options, _e): void {
+              click(chart: ChartObject, _options, _e): void {
                 const iconNN = document.querySelector('.custom-icon-nn');
-                if (normalNMode) {
+                if (normalNMode.value) {
                   if (iconNN) {
                     iconNN.classList.add('primary--text');
                   }
-                  chart.updateOptions({
-                    yaxis: {
-                      labels: {
-                        formatter(value: number): string {
-                          return Math.floor(value).toString();
+                  chart
+                    .updateOptions({
+                      yaxis: {
+                        labels: {
+                          formatter(value: number): string {
+                            return Math.floor(value).toString();
+                          },
                         },
                       },
-                    },
-                  });
-                  chart.resetSeries(true, true);
-                  normalNMode = false;
+                    })
+                    .catch(() => {
+                      getLogger(name).error('failed to update options');
+                    });
+                  chart.resetSeries();
+                  normalNMode.value = false;
                   nnActive.value = false;
                 } else {
                   if (iconNN) {
                     iconNN.classList.remove('primary--text');
-                    // iconNN.setAttribute('style', 'color: #000000');
                   }
-                  chart.updateOptions({
-                    yaxis: {
-                      min: 0,
-                      labels: {
-                        formatter(value: number): string {
-                          return Math.floor(value).toString();
+                  chart
+                    .updateOptions({
+                      yaxis: {
+                        min: 0,
+                        labels: {
+                          formatter(value: number): string {
+                            return Math.floor(value).toString();
+                          },
                         },
                       },
-                    },
-                  });
-                  chart.resetSeries(true, true);
-                  normalNMode = true;
+                    })
+                    .catch(() => {
+                      getLogger(name).error('failed to update options');
+                    });
+                  chart.resetSeries();
+                  normalNMode.value = true;
                   nnActive.value = true;
                 }
               },
@@ -298,107 +325,31 @@ export function setupChart(
               title: `${String(app.vueI18n.t('heightProfile.measurement.clear'))}`,
               class: 'custom-icon-clear',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              click(chart: ApexChartContext, _options, _e): void {
-                currentMeasurment?.destroy();
-                addScaleFactorToGraph(chart);
+              click(chart: ChartObject, _options, _e): void {
+                if (currentMeasurement?.value) {
+                  currentMeasurement.value.destroy();
+                  addScaleFactorToGraph(
+                    chart,
+                    app,
+                    scaleFactorInitial,
+                    scaleFactorSave,
+                    scaleFactorManuallySet,
+                  );
+                }
               },
             },
           ],
         },
-      },
-      events: {
-        click(
-          _event: object,
-          chartContext: ApexChartContext,
-          config: ApexConfig,
-        ): void {
-          if (measurementActive.value) {
-            if (config.dataPointIndex >= 0) {
-              if (series?.length === 1 || currentMeasurment?.finished) {
-                const value = series[0].data[config.dataPointIndex];
-                if (currentMeasurment && !currentMeasurment.finished) {
-                  currentMeasurment.addValue(value);
-                } else {
-                  currentMeasurment?.destroy();
-                  currentMeasurment = startChartMeasurement(
-                    app,
-                    chartContext,
-                    series,
-                    results,
-                    measurementActive,
-                    value,
-                  );
-                }
-                addScaleFactorToGraph(chartContext);
-              } else {
-                app.notifier.add({
-                  type: NotificationType.WARNING,
-                  message: String('heightProfile.measurementWarning'),
-                });
-              }
-            }
-          }
-        },
-        mouseMove(
-          _event: object,
-          _chartContext: ApexChartContext,
-          config: ApexConfig,
-        ): void {
-          if (config.dataPointIndex >= 0) {
-            const values = results.getByKey(series[config.seriesIndex].id);
-            const point = values?.resultPoints[config.dataPointIndex];
-            if (point) {
-              placeTooltip(plugin, point);
-            }
-          } else {
-            plugin.measurementLayer.removeFeaturesById(['_tooltip']);
-          }
-        },
-        mouseLeave(): void {
-          plugin.layer.removeFeaturesById(['_tooltip']);
-        },
-        scrolled(chartContext) {
-          addScaleFactorToGraph(chartContext);
-          if (currentMeasurment?.values) {
-            addMeasurementAnnotationsToGraph(
-              currentMeasurment.values,
-              chartContext,
-              app,
-            );
-          }
-        },
-        mounted(chartContext: ApexChartContext) {
-          addScaleFactorToGraph(chartContext, true);
-        },
-        animationEnd(
-          chartContext: ApexChartContext,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          _config: ApexConfig,
-        ): void {
-          if (currentMeasurment?.values) {
-            addMeasurementAnnotationsToGraph(
-              currentMeasurment.values,
-              chartContext,
-              app,
-            );
-          }
-          addScaleFactorToGraph(chartContext);
-          const iconNN = document.querySelector('.custom-icon-nn');
-          const iconStart = document.querySelector('.custom-icon-start');
-          if (iconNN) {
-            if (normalNMode) {
-              iconNN.classList.add('primary--text');
-            } else {
-              iconNN.classList.remove('primary--text');
-            }
-          }
-          if (iconStart) {
-            if (measurementActive.value) {
-              iconStart.classList.add('primary--text');
-            } else {
-              iconStart.classList.remove('primary--text');
-            }
-          }
+        export: {
+          csv: {
+            filename: 'graph',
+          },
+          svg: {
+            filename: 'graph',
+          },
+          png: {
+            filename: 'graph',
+          },
         },
       },
     },
@@ -443,12 +394,12 @@ export function setupChart(
   return {
     series,
     chartOptions,
-    scaleFactorSave,
-    scaleFactorInitial,
     nnActive,
     destroy(): void {
       plugin.measurementLayer.removeAllFeatures();
-      currentMeasurment?.destroy();
+      if (currentMeasurement?.value) {
+        currentMeasurement.value.destroy();
+      }
     },
   };
 }

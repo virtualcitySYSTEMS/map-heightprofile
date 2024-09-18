@@ -188,6 +188,8 @@ export default function plugin(): HeightProfilePlugin {
             'Click the map to define the line of your profile. Double click a location to end your line.',
           tempTitle: 'Temporary Height Profile',
           scaleFactor: 'Scale Factor',
+          scaleFactorTooltip:
+            'The Scale Factor indicates by how much the elevation values are scaled compared to the horizontal distances in a profile.',
           measurement: {
             start: 'Start Measurement in Graph',
             stop: 'Stop Measurement in Graph',
@@ -254,6 +256,8 @@ export default function plugin(): HeightProfilePlugin {
             'Klicken Sie auf die Karte, um die Linie Ihres Profils zu definieren. Doppelklicken Sie auf eine Stelle, um Ihre Linie zu beenden.',
           tempTitle: 'Temporäres Höhenprofil',
           scaleFactor: 'Überhöhungsfaktor',
+          scaleFactorTooltip:
+            'Der Überhöhungsfaktor gibt an, um wie viel die Höhenwerte im Vergleich zu den horizontalen Distanzen im Höhenprofil vergrößert dargestellt werden.',
           measurement: {
             start: 'Messung im Graphen starten',
             stop: 'Messung im Graphen stoppen',

@@ -4,89 +4,13 @@ import Feature from 'ol/Feature';
 import { LineString } from 'ol/geom';
 import { Stroke, Style } from 'ol/style';
 import { Ref } from 'vue';
+import type { ChartObject, ChartMeasurement, SeriesEntry } from 'apexcharts';
+import { getLogger } from '@vcsuite/logger';
 import type { HeightProfileResult } from '../setupResultCollectionComponent.js';
 import type { HeightProfilePlugin } from '../index.js';
 import { name } from '../../package.json';
 
 export const measureColor = '#FF0000';
-
-export type ChartMeasurement = {
-  readonly finished: boolean;
-  readonly values: [number, number][];
-  addValue: (value: [number, number]) => void;
-  destroy: () => void;
-};
-
-export type SeriesEntry = {
-  name: string;
-  data: Array<[number, number]>;
-  id?: string | undefined;
-  color?: string | undefined;
-  zIndex?: number | undefined;
-};
-
-type ApexPointAnnotation = {
-  x: number;
-  y: number;
-  label: {
-    borderColor: string;
-    style: { color: string; background: string };
-    text: string;
-  };
-};
-
-type XAxisAnnotation = {
-  x: number;
-  y?: number;
-  label: {
-    textAnchor: 'start' | 'middle' | 'end';
-    position: 'top' | 'center' | 'bottom';
-    orientation: 'horizontal' | 'vertical';
-    text: string;
-    style?: { color: string; background: string };
-  };
-};
-
-export type ApexChartContext = {
-  addPointAnnotation: (annotation: ApexPointAnnotation, flag: boolean) => void;
-  addXaxisAnnotation: (annotation: XAxisAnnotation, flag: boolean) => void;
-  updateOptions: (options: {
-    yaxis?: {
-      min?: number;
-      max?: number;
-      labels: {
-        formatter(value: number): string;
-      };
-    };
-    xaxis?: {
-      min?: number;
-      max?: number;
-      labels: {
-        formatter(value: number): string;
-      };
-    };
-  }) => void;
-  resetSeries: (arg0: boolean, arg1: boolean) => void;
-  w: {
-    globals: {
-      maxY: number;
-      maxX: number;
-      minY: number;
-      minX: number;
-      gridWidth: number;
-      gridHeight: number;
-    };
-  };
-  updateSeries: (
-    series: Array<{
-      name: string;
-      data: Array<[number, number]>;
-      color?: string | undefined;
-      zIndex?: number | undefined;
-    }>,
-  ) => void;
-  clearAnnotations: () => void;
-};
 
 export function calcSideLength(
   p1: [number, number],
@@ -105,7 +29,7 @@ export function createPointAnnotation(
   x: number,
   y: number,
   text: string,
-  chartContext: ApexChartContext,
+  chartContext: ChartObject,
 ): void {
   const annotation = {
     x,
@@ -126,7 +50,7 @@ function addTriangleToChartContext(
   app: VcsUiApp,
   values: [number, number][],
   series: SeriesEntry[],
-  chartContext: ApexChartContext,
+  chartContext: ChartObject,
   measurementActive: Ref<boolean>,
 ): () => void {
   const points = [
@@ -137,7 +61,7 @@ function addTriangleToChartContext(
   ] as Array<[number, number]>;
 
   const seriesElement = {
-    name: `${String(app.vueI18n.t('heightProfile.measureLine'))}`,
+    name: app.vueI18n.t('heightProfile.measureLine'),
     id: 'measurements',
     data: points,
     color: measureColor,
@@ -145,7 +69,9 @@ function addTriangleToChartContext(
   };
   series.push(seriesElement);
 
-  chartContext.updateSeries(series);
+  chartContext.updateSeries(series).catch(() => {
+    getLogger(name).error('failed to update series');
+  });
   const iconStart = document.querySelector('.custom-icon-start');
   if (iconStart) {
     iconStart.classList.remove('primary--text');
@@ -178,7 +104,15 @@ function addTriangleToChartContext(
     if (indexToRemove !== -1) {
       series.splice(indexToRemove, 1);
     }
-    chartContext.updateSeries(series);
+    if (
+      chartContext &&
+      chartContext.updateSeries &&
+      document.querySelector('#apexChartId')
+    ) {
+      chartContext.updateSeries(series).catch(() => {
+        getLogger(name).error('failed to update series');
+      });
+    }
   };
 }
 
@@ -213,14 +147,14 @@ function addChartMeasurementFeature(
 
   const feature: Feature = new Feature({
     geometry: new LineString([
-      Projection.wgs84ToMercator(position[0]!),
+      Projection.wgs84ToMercator(position[0]),
       Projection.wgs84ToMercator([
-        position[1]![0],
-        position[1]![1],
-        position[2]![2],
+        position[1][0],
+        position[1][1],
+        position[2][2],
       ]),
-      Projection.wgs84ToMercator(position[2]!),
-      Projection.wgs84ToMercator(position[3]!),
+      Projection.wgs84ToMercator(position[2]),
+      Projection.wgs84ToMercator(position[3]),
     ]),
     olcs_altitudeMode: 'absolute',
   });
@@ -243,7 +177,7 @@ function addChartMeasurementFeature(
 function createMeasurementPointAnnotation(
   values: [number, number][],
   app: VcsUiApp,
-  chartContext: ApexChartContext,
+  chartContext: ChartObject,
 ): void {
   createPointAnnotation(
     values[values.length - 2][0],
@@ -261,7 +195,7 @@ function createMeasurementPointAnnotation(
 
 export function startChartMeasurement(
   app: VcsUiApp,
-  chartContext: ApexChartContext,
+  chartContext: ChartObject,
   series: SeriesEntry[],
   results: Collection<HeightProfileResult>,
   measurementActive: Ref<boolean>,
@@ -317,7 +251,14 @@ export function startChartMeasurement(
       finished = true;
       destroy();
       destroyMeasurementLayer();
-      chartContext?.clearAnnotations();
+      if (
+        chartContext &&
+        chartContext.clearAnnotations &&
+        document.querySelector('#apexChartId')
+      ) {
+        chartContext.clearAnnotations();
+      }
+
       values.splice(0);
     },
   };
@@ -330,7 +271,7 @@ export function startChartMeasurement(
 
 export function addMeasurementAnnotationsToGraph(
   values: [number, number][],
-  chartContext: ApexChartContext,
+  chartContext: ChartObject,
   app: VcsUiApp,
 ): void {
   if (values.length === 2) {

@@ -71,7 +71,7 @@ export function createCreateAction(
           state: {
             headerTitle: 'heightProfile.tempTitle',
             infoUrlCallback: app.getHelpUrlCallback(
-              'tools/heightProfileTool.html',
+              'tools/heightProfileTool.html#id_heightProfile_calculateProfile',
             ),
           },
         };
@@ -131,6 +131,9 @@ export function createToolboxButton(
     heightProfileCategory,
   );
 
+  if (app.toolboxManager.has('HeightProfileEditorComponent')) {
+    app.toolboxManager.remove('HeightProfileEditorComponent');
+  }
   app.toolboxManager.add(
     {
       id: 'HeightProfileEditorComponent',

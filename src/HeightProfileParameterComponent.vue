@@ -7,7 +7,6 @@
             <VcsLabel
               html-for="vp-resolution"
               :title="$t('heightProfile.tooltip.resolution')"
-              :dense="true"
             >
               {{ $t('heightProfile.resolution') }}
             </VcsLabel>
@@ -26,7 +25,7 @@
         </v-row>
         <v-row no-gutters>
           <v-col cols="6">
-            <VcsLabel html-for="vp-classification-type" :dense="true">
+            <VcsLabel html-for="vp-classification-type">
               {{ $t('heightProfile.classification') }}
             </VcsLabel>
           </v-col>
@@ -35,7 +34,8 @@
               id="vp-classification-type"
               :items="terrainselectvalues"
               v-model="elevationType"
-              dense
+              :item-text="(item: TerrainSelectItem) => item.text"
+              :item-value="(item: TerrainSelectItem) => item.modelValue"
             />
           </v-col>
         </v-row>
@@ -56,7 +56,7 @@
           <v-card-text>
             {{ $t('heightProfile.dialogText') }}
           </v-card-text>
-          <v-progress-linear :value="progressBar"></v-progress-linear>
+          <v-progress-linear :model-value="progressBar"></v-progress-linear>
           <v-card-actions>
             <VcsFormButton color="primary" @click="cancelCalc">{{
               $t('heightProfile.cancel')
@@ -85,7 +85,7 @@
     VCardText,
     VCardActions,
     VProgressLinear,
-  } from 'vuetify/lib';
+  } from 'vuetify/components';
 
   import { v4 as uuidv4 } from 'uuid';
   import {
@@ -112,6 +112,12 @@
     CancelledError,
     createHeightProfileCalculation,
   } from './helper/calculationHelper.js';
+
+  interface TerrainSelectItem {
+    text: string;
+    modelValue: string;
+    disabled: boolean;
+  }
 
   export const windowIdSetParameter = 'heightProfileSetParameter_window_id';
   export default defineComponent({
@@ -155,18 +161,14 @@
       const collectionComponent = inject(
         'collectionComponent',
       ) as CollectionComponentClass<HeightProfileResult>;
-      const terrainselectvalues: Array<{
-        text: string;
-        value: string;
-        disabled: boolean;
-      }> = [
+      const terrainselectvalues: Array<TerrainSelectItem> = [
         {
-          value: 'terrain',
+          modelValue: 'terrain',
           text: 'heightProfile.classificationType.DGM',
           disabled: false, // set if terrain in map
         },
         {
-          value: 'both',
+          modelValue: 'both',
           text: 'heightProfile.classificationType.DOM',
           disabled: false,
         },

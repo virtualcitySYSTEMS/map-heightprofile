@@ -47,7 +47,7 @@ export function createImportExport(
               type: NotificationType.WARNING,
               message: app.vueI18n.t('components.import.predicateFailure', [
                 predicateDelta,
-              ]) as string,
+              ]),
             });
           }
 
@@ -65,7 +65,7 @@ export function createImportExport(
               type: NotificationType.WARNING,
               message: app.vueI18n.t('components.import.addFailure', [
                 importedDelta,
-              ]) as string,
+              ]),
             });
           }
 
@@ -74,14 +74,12 @@ export function createImportExport(
               type: NotificationType.SUCCESS,
               message: app.vueI18n.t('components.import.featuresAdded', [
                 imported.length,
-              ]) as string,
+              ]),
             });
           } else {
             app.notifier.add({
               type: NotificationType.ERROR,
-              message: app.vueI18n.t(
-                'components.import.nothingAdded',
-              ) as string,
+              message: app.vueI18n.t('components.import.nothingAdded'),
             });
           }
 
@@ -125,7 +123,7 @@ export function createImportExport(
             prettyPrint: true,
             writeId: true,
           },
-        ) as string;
+        );
 
         downloadText(heightProfileText, 'heightProfile.json');
       },

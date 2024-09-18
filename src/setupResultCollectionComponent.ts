@@ -47,13 +47,13 @@ export function createGraphComponentOptions(
     component: GraphComponent,
     slot: WindowSlot.DYNAMIC_CHILD,
     position: {
-      left: '35%',
-      right: '35%',
-      top: '10%',
+      width: '900px',
     },
     state: {
       headerTitle: 'heightProfile.diagram',
-      infoUrlCallback: app.getHelpUrlCallback('tools/heightProfileTool.html'),
+      infoUrlCallback: app.getHelpUrlCallback(
+        'tools/heightProfileTool.html#id_heightProfile_diagram',
+      ),
     },
     props,
     provides: {
@@ -71,6 +71,9 @@ function createAddHeightProfileAction(
     title: 'heightProfile.collection.add',
     icon: '$vcsPlus',
     callback(): void {
+      if (app.windowManager.has(name)) {
+        app.windowManager.remove(name);
+      }
       app.windowManager.add(contentComponent, name);
     },
   };

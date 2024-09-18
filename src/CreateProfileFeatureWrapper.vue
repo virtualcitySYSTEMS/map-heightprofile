@@ -1,17 +1,20 @@
 <template>
-  <HeightProfileEditor
-    v-if="featureId"
-    :feature-id="featureId"
-    @update-title="updateTitle"
-  />
-  <v-row v-else no-gutters class="py-0 px-1">
-    <v-col>{{ $t('heightProfile.initialMessage') }} </v-col>
-  </v-row>
+  <div>
+    <VcsHelp
+      v-if="!creationFinished"
+      :text="$t('heightProfile.initialMessage')"
+      :show="true"
+    ></VcsHelp>
+    <HeightProfileEditor
+      v-if="featureId"
+      :feature-id="featureId"
+      @update-title="updateTitle"
+    />
+  </div>
 </template>
 <script lang="ts">
   import { defineComponent, inject, onUnmounted, PropType, ref } from 'vue';
-  import { VCol, VRow } from 'vuetify/lib';
-  import { VcsUiApp, WindowState } from '@vcmap/ui';
+  import { VcsHelp, VcsUiApp, WindowState } from '@vcmap/ui';
   import { SessionType } from '@vcmap/core';
   import { getLogger } from '@vcsuite/logger';
   import { name } from '../package.json';
@@ -21,8 +24,7 @@
   export default defineComponent({
     name: 'CreateProfileFeatureWrapper',
     components: {
-      VRow,
-      VCol,
+      VcsHelp,
       HeightProfileEditor,
     },
     props: {
@@ -36,7 +38,7 @@
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
       const featureId = ref<string | undefined>();
-
+      const creationFinished = ref(false);
       const session = plugin.session.value;
 
       if (session?.type !== SessionType.CREATE) {
@@ -48,7 +50,26 @@
             featureId.value = feature.getId() as string;
           },
         );
-        onUnmounted(sessionListener);
+
+        const sessionFinishedListener =
+          session.creationFinished.addEventListener(() => {
+            creationFinished.value = true;
+          });
+
+        const sessionStoppedListener = session.stopped.addEventListener(() => {
+          if (!featureId.value) {
+            emit('close');
+          }
+        });
+
+        onUnmounted(() => {
+          if (creationFinished.value === false) {
+            session.stop();
+          }
+          sessionListener();
+          sessionFinishedListener();
+          sessionStoppedListener();
+        });
       }
 
       const updateTitle = (title: string): void => {
@@ -58,6 +79,7 @@
       return {
         featureId,
         updateTitle,
+        creationFinished,
       };
     },
   });

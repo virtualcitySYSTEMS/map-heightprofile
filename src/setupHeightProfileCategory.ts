@@ -25,6 +25,7 @@ export async function createCategory(
   const { collectionComponent } =
     await app.categoryManager.requestCategory<HeightProfileItem>(
       {
+        type: 'Category',
         name: 'HeightProfile',
         title: 'heightProfile.title',
         // @ts-expect-error id is private and therefore not typed

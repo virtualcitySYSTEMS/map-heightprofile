@@ -1,71 +1,75 @@
 import { Ref } from 'vue';
-import type { ApexChartContext } from './measurementHelper.js';
+import type { ChartObject } from 'apexcharts';
+import { getLogger } from '@vcsuite/logger';
+import { name } from '../../package.json';
 
-function setScaleFactorSmall(
-  chart: ApexChartContext,
-  scaleFactorSet: number,
-): void {
+function setScaleFactorSmall(chart: ChartObject, scaleFactorSet: number): void {
   const yMax =
-    ((chart.w.globals.maxX - chart.w.globals.minX) *
-      chart.w.globals.gridHeight) /
-      (chart.w.globals.gridWidth * scaleFactorSet) +
-    chart.w.globals.minY;
+    ((chart.chart.w.globals.maxX - chart.chart.w.globals.minX) *
+      chart.chart.w.globals.gridHeight) /
+      (chart.chart.w.globals.gridWidth * scaleFactorSet) +
+    chart.chart.w.globals.minY;
 
-  chart.updateOptions({
-    yaxis: {
-      min: chart.w.globals.minY,
-      max: yMax,
-      labels: {
-        formatter(value: number): string {
-          return Math.floor(value).toString();
+  chart
+    .updateOptions({
+      yaxis: {
+        min: chart.chart.w.globals.minY,
+        max: yMax,
+        labels: {
+          formatter(value: number): string {
+            return Math.floor(value).toString();
+          },
         },
       },
-    },
-  });
-  chart.resetSeries(true, true);
+    })
+    .catch(() => {
+      getLogger(name).error('failed to update options');
+    });
+  chart.resetSeries();
 }
 
-function setScaleFactorBig(
-  chart: ApexChartContext,
-  scaleFactorSet: number,
-): void {
+function setScaleFactorBig(chart: ChartObject, scaleFactorSet: number): void {
   const xMax =
     (scaleFactorSet *
-      (chart.w.globals.maxY - chart.w.globals.minY) *
-      chart.w.globals.gridWidth) /
-      chart.w.globals.gridHeight +
-    chart.w.globals.minX;
+      (chart.chart.w.globals.maxY - chart.chart.w.globals.minY) *
+      chart.chart.w.globals.gridWidth) /
+      chart.chart.w.globals.gridHeight +
+    chart.chart.w.globals.minX;
 
-  chart.updateOptions({
-    xaxis: {
-      min: chart.w.globals.minX,
-      max: xMax,
-      labels: {
-        formatter(value: number): string {
-          return Math.floor(value).toString();
+  chart
+    .updateOptions({
+      xaxis: {
+        min: chart.chart.w.globals.minX,
+        max: xMax,
+        labels: {
+          formatter(value: number): string {
+            return Math.floor(value).toString();
+          },
         },
       },
-    },
-  });
-  chart.resetSeries(true, true);
+    })
+    .catch(() => {
+      getLogger(name).error('failed to update options');
+    });
+  chart.resetSeries();
 }
 
-function getCurrentScaleFactor(chart: ApexChartContext): number {
+function getCurrentScaleFactor(chart: ChartObject): number {
   return (
     Math.round(
-      ((chart.w.globals.gridHeight *
-        (chart.w.globals.maxX - chart.w.globals.minX)) /
-        ((chart.w.globals.maxY - chart.w.globals.minY) *
-          chart.w.globals.gridWidth)) *
+      ((chart.chart.w.globals.gridHeight *
+        (chart.chart.w.globals.maxX - chart.chart.w.globals.minX)) /
+        ((chart.chart.w.globals.maxY - chart.chart.w.globals.minY) *
+          chart.chart.w.globals.gridWidth)) *
         100,
     ) / 100
   );
 }
 
 function setScaleFactorLoop(
-  chart: ApexChartContext,
+  chart: ChartObject,
   scaleFactorSet: number,
-  scaleFunction: (chart: ApexChartContext, scaleFactorSet: number) => void,
+  scaleFunction: (chart: ChartObject, scaleFactorSet: number) => void,
 ): void {
   let numb = 1;
   do {
@@ -84,11 +88,11 @@ function setScaleFactorLoop(
  */
 // eslint-disable-next-line import/prefer-default-export
 export function setScaleFactor(
-  chart: ApexChartContext,
+  chart: ChartObject,
   scaleFactorSave: Ref<number>,
   scaleFactorInitial: Ref<number>,
 ): void {
-  chart.resetSeries(true, true);
+  chart.resetSeries();
   const scaleFactorSet = scaleFactorSave.value;
   if (scaleFactorSet && scaleFactorSet > 0) {
     if (scaleFactorSet < scaleFactorInitial.value) {

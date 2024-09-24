@@ -47,7 +47,10 @@ export function createGraphComponentOptions(
     component: GraphComponent,
     slot: WindowSlot.DYNAMIC_CHILD,
     position: {
-      width: '900px',
+      left: '35%',
+      right: '25%',
+      top: '10%',
+      minWidth: '500px',
     },
     state: {
       headerTitle: 'heightProfile.diagram',

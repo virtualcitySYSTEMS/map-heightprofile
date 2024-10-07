@@ -102,6 +102,7 @@
         )) as HeightProfileFeature;
 
       function setPointsFromFeature(featureItem: HeightProfileFeature): void {
+        let count = 0;
         const coords = featureItem.getGeometry()?.getCoordinates() ?? [];
         points.value = coords.map((coord) => {
           const coordP = Projection.transform(
@@ -109,8 +110,9 @@
             mercatorProjection,
             coord,
           );
+          count += 1;
           return {
-            id: `Punkt ${coords.length + 1}`,
+            id: `${app.vueI18n.t('heightProfile.point')} ${count}`,
             name: undefined,
             x: coordP[0].toFixed(2),
             y: coordP[1].toFixed(2),
@@ -170,6 +172,12 @@
           setPointsFromFeature(feature);
         });
 
+      const listeners = [
+        app.localeChanged.addEventListener(() => {
+          setPointsFromFeature(feature);
+        }),
+      ];
+
       const { action, destroy } = createCreateAction(
         app,
         plugin.layer,
@@ -200,6 +208,7 @@
         workspaceAddedListener();
         destroyEditAction();
         destroy();
+        listeners.forEach((listener) => listener());
       });
 
       return {

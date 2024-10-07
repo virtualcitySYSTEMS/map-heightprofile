@@ -463,4 +463,8 @@
     color: #6e8192;
     text-align: center;
   }
+
+  .apexcharts-svg.apexcharts-zoomable.hovering-zoom {
+    background: transparent !important;
+  }
 </style>

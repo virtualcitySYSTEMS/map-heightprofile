@@ -464,7 +464,7 @@
     text-align: center;
   }
 
-  .apexcharts-svg.apexcharts-zoomable.hovering-zoom {
+  .apexcharts-svg.apexcharts-zoomable {
     background: transparent !important;
   }
 </style>

@@ -34,8 +34,6 @@
               id="vp-classification-type"
               :items="terrainselectvalues"
               v-model="elevationType"
-              :item-text="(item: TerrainSelectItem) => item.text"
-              :item-value="(item: TerrainSelectItem) => item.modelValue"
             />
           </v-col>
         </v-row>
@@ -114,9 +112,9 @@
   } from './helper/calculationHelper.js';
 
   interface TerrainSelectItem {
-    text: string;
-    modelValue: string;
-    disabled: boolean;
+    title: string;
+    value: string;
+    props: { disabled: boolean };
   }
 
   export const windowIdSetParameter = 'heightProfileSetParameter_window_id';
@@ -161,23 +159,23 @@
       const collectionComponent = inject(
         'collectionComponent',
       ) as CollectionComponentClass<HeightProfileResult>;
-      const terrainselectvalues: Array<TerrainSelectItem> = [
+      const terrainselectvalues: Ref<Array<TerrainSelectItem>> = ref([
         {
-          modelValue: 'terrain',
-          text: 'heightProfile.classificationType.DGM',
-          disabled: false, // set if terrain in map
+          value: 'terrain',
+          title: 'heightProfile.classificationType.DGM',
+          props: { disabled: false }, // set if terrain in map
         },
         {
-          modelValue: 'both',
-          text: 'heightProfile.classificationType.DOM',
-          disabled: false,
+          value: 'both',
+          title: 'heightProfile.classificationType.DOM',
+          props: { disabled: false },
         },
-      ];
+      ]);
 
       function checkTerrain(): void {
         if (app.maps.activeMap instanceof CesiumMap) {
           const scene = app.maps.activeMap.getScene()!;
-          terrainselectvalues[0].disabled =
+          terrainselectvalues.value[0].props.disabled =
             !scene.terrainProvider.hasVertexNormals;
         }
       }

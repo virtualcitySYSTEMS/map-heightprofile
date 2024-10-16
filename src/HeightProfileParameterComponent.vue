@@ -56,6 +56,7 @@
           </v-card-text>
           <v-progress-linear :model-value="progressBar"></v-progress-linear>
           <v-card-actions>
+            <v-spacer></v-spacer>
             <VcsFormButton color="primary" @click="cancelCalc">{{
               $t('heightProfile.cancel')
             }}</VcsFormButton>
@@ -83,6 +84,7 @@
     VCardText,
     VCardActions,
     VProgressLinear,
+    VSpacer,
   } from 'vuetify/components';
 
   import { v4 as uuidv4 } from 'uuid';
@@ -134,6 +136,7 @@
       VcsLabel,
       VcsSelect,
       VcsTextField,
+      VSpacer,
     },
     props: {
       featureId: {

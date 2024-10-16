@@ -174,9 +174,9 @@
 
       function checkTerrain(): void {
         if (app.maps.activeMap instanceof CesiumMap) {
-          const scene = app.maps.activeMap.getScene()!;
           terrainselectvalues.value[0].props.disabled =
-            !scene.terrainProvider.hasVertexNormals;
+            app.maps.activeMap.terrainProvider ===
+            app.maps.activeMap.defaultTerrainProvider;
         }
       }
 

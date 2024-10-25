@@ -6,7 +6,7 @@
           <v-col cols="6">
             <VcsLabel
               html-for="vp-resolution"
-              :title="$t('heightProfile.tooltip.resolution')"
+              :help-text="$t('heightProfile.tooltip.resolution')"
             >
               {{ $t('heightProfile.resolution') }}
             </VcsLabel>
@@ -16,7 +16,6 @@
               id="vp-resolution"
               type="number"
               :step="1"
-              :title="$t('heightProfile.tooltip.resolution')"
               show-spin-buttons
               v-model.number="resolution"
               :rules="[resolutionRule]"

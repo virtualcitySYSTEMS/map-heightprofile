@@ -40,7 +40,7 @@ export function createCreateAction(
 
   const action = reactive<VcsAction>({
     name: 'heightProfile.create',
-    title: 'heightProfile.tip',
+    title: 'heightProfile.toolbarTitle',
     icon: '$vcsElevationProfile',
     active: false,
     async callback(): Promise<void> {

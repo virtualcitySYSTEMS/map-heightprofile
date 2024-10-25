@@ -32,7 +32,7 @@
         <v-col class="width-constraint">
           <VcsLabel
             html-for="vp-scaleFactor"
-            :title="$t('heightProfile.scaleFactorTooltip')"
+            :help-text="$t('heightProfile.scaleFactorTooltip')"
           >
             {{ $t('heightProfile.scaleFactor') }}
           </VcsLabel>
@@ -43,7 +43,6 @@
             type="number"
             :step="1"
             :min="0.0"
-            :tooltip="$t('heightProfile.scaleFactorTooltip')"
             show-spin-buttons
             :decimals="2"
             @focusin="scaleFactorManuallySet = true"

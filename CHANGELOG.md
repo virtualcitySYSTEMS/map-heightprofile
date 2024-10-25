@@ -1,6 +1,7 @@
 # v2.0.0
 
-Update the Plugin for Map 6.0 and update the apexChart dependency to vue3.
+- Updates @vcmap/core and @vcmap/ui to version 6.x
+- Updates apexcharts to Vue3
 
 # v1.0.0
 

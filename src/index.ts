@@ -139,6 +139,7 @@ export default function plugin(): HeightProfilePlugin {
     i18n: {
       en: {
         heightProfile: {
+          toolbarTitle: 'Create height profile',
           titleTemporary: 'Height Profile',
           heightProfileCalculated: 'Height Profile Calculated',
           distance: 'Distance (m)',
@@ -160,7 +161,6 @@ export default function plugin(): HeightProfilePlugin {
           delete: 'Delete',
           title: 'Height Profile',
           create: 'Height Profile',
-          tip: 'Calculate Height Profile',
           profile: 'Profile',
           diagram: 'Calculated Profiles: Diagram',
           classificationType: { DGM: 'DTM', DOM: 'DSM' },
@@ -186,7 +186,7 @@ export default function plugin(): HeightProfilePlugin {
             'Subsequent modification of the geometry deletes all previously calculated profiles.',
           initialMessage:
             'Click the map to define the line of your profile. Double click a location to end your line.',
-          tempTitle: 'Temporary Height Profile',
+          tempTitle: 'Temporary height profile',
           scaleFactor: 'Scale Factor',
           scaleFactorTooltip:
             'The Scale Factor indicates by how much the elevation values are scaled compared to the horizontal distances in a profile.',
@@ -210,6 +210,7 @@ export default function plugin(): HeightProfilePlugin {
       },
       de: {
         heightProfile: {
+          toolbarTitle: 'Höhenprofil erstellen',
           titleTemporary: 'Höhenprofil',
           heightProfileCalculated: 'Höhenprofil berechnet',
           heightProfileCanceled: 'Berechnung des Höhenprofiles abgebrochen!',
@@ -228,7 +229,6 @@ export default function plugin(): HeightProfilePlugin {
           resolutionError: 'Die Auflösung muss größer als 0 sein.',
           edit: 'Geometrie bearbeiten',
           delete: 'Löschen',
-          tip: 'Höhenprofil berechnen',
           title: 'Höhenprofil',
           create: 'Höhenprofil',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },

@@ -1,3 +1,7 @@
+# v2.0.1
+
+- changed css styles to not pollute the global css namespace
+
 # v2.0.0
 
 - Updates @vcmap/core and @vcmap/ui to version 6.x

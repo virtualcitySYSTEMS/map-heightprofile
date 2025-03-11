@@ -52,6 +52,9 @@
     "vue": "~3.4.38",
     "vuetify": "^3.7.3"
   },
+  "overrides": {
+    "esbuild": "^0.25.0"
+  },
   "devDependencies": {
     "@types/uuid": "^9.0.8",
     "@vcmap/plugin-cli": "^4.0.1",

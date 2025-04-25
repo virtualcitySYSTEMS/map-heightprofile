@@ -1,10 +1,7 @@
-import {
-  EditorCollectionComponentClass,
-  VcsUiApp,
-  WindowSlot,
-} from '@vcmap/ui';
-import Feature from 'ol/Feature';
-import { LineString } from 'ol/geom';
+import type { EditorCollectionComponentClass, VcsUiApp } from '@vcmap/ui';
+import { WindowSlot } from '@vcmap/ui';
+import type Feature from 'ol/Feature';
+import type { LineString } from 'ol/geom';
 import HeightProfileEditorComponent from '../HeightProfileEditor.vue';
 import { name } from '../../package.json';
 

@@ -1,20 +1,22 @@
-import { EditorCollectionComponentClass, VcsPlugin, VcsUiApp } from '@vcmap/ui';
-import {
+import type {
+  EditorCollectionComponentClass,
+  VcsPlugin,
+  VcsUiApp,
+} from '@vcmap/ui';
+import type {
   CreateFeatureSession,
   EditGeometrySession,
   GeometryType,
   VectorLayer,
 } from '@vcmap/core';
-import { ShallowRef } from 'vue';
+import type { ShallowRef } from 'vue';
 import { name, version, mapVersion } from '../package.json';
 
 import { createToolboxButton } from './helper/actionHelper.js';
 import { createCategory } from './setupHeightProfileCategory.js';
-import { HeightProfileItem } from './helper/heightProfileEditorHelper.js';
-import {
-  HeightProfileSessionType,
-  createSessionReference,
-} from './helper/sessionHelper.js';
+import type { HeightProfileItem } from './helper/heightProfileEditorHelper.js';
+import type { HeightProfileSessionType } from './helper/sessionHelper.js';
+import { createSessionReference } from './helper/sessionHelper.js';
 import {
   createVectorLayer,
   createHeightProfileLayer,
@@ -280,7 +282,9 @@ export default function plugin(): HeightProfilePlugin {
       },
     },
     destroy(): void {
-      destroyListeners.forEach((listener) => listener());
+      destroyListeners.forEach((listener) => {
+        listener();
+      });
     },
   };
 }

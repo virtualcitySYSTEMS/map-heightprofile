@@ -1,9 +1,10 @@
-import { VcsUiApp } from '@vcmap/ui';
-import { Collection, Projection } from '@vcmap/core';
+import type { VcsUiApp } from '@vcmap/ui';
+import type { Collection } from '@vcmap/core';
+import { Projection } from '@vcmap/core';
 import Feature from 'ol/Feature';
 import { LineString } from 'ol/geom';
 import { Stroke, Style } from 'ol/style';
-import { Ref } from 'vue';
+import type { Ref } from 'vue';
 import type { ChartObject, ChartMeasurement, SeriesEntry } from 'apexcharts';
 import { getLogger } from '@vcsuite/logger';
 import type { HeightProfileResult } from '../setupResultCollectionComponent.js';

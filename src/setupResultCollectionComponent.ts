@@ -1,15 +1,14 @@
-import {
-  CollectionComponentClass,
+import type {
   CollectionComponentListItem,
   VcsAction,
   VcsUiApp,
   WindowComponentOptions,
-  WindowSlot,
 } from '@vcmap/ui';
+import { CollectionComponentClass, WindowSlot } from '@vcmap/ui';
 import { Collection } from '@vcmap/core';
 import { nextTick, watch } from 'vue';
-import { Coordinate } from 'ol/coordinate';
-import { HeightProfileFeature } from './heightProfileFeature.js';
+import type { Coordinate } from 'ol/coordinate';
+import type { HeightProfileFeature } from './heightProfileFeature.js';
 import type { HeightProfilePlugin } from './index';
 import HeightProfileParameterComponent, {
   windowIdSetParameter,

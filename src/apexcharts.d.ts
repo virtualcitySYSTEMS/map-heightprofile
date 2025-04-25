@@ -1,4 +1,4 @@
-import ApexCharts from 'apexcharts';
+import type ApexCharts from 'apexcharts';
 
 declare module 'apexcharts' {
   export type ApexConfig = {

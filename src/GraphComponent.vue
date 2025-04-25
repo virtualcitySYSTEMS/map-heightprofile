@@ -10,7 +10,7 @@
         </VCard>
       </v-col>
     </v-row>
-    <div class="distance-top" id="chart">
+    <div id="chart" class="distance-top">
       <apexchart
         id="apexChartId"
         ref="demoChart"
@@ -20,9 +20,9 @@
         :series="series"
         @click="apexClick"
         @mounted="apexMounted"
-        @animationEnd="apexAnimationEnd"
-        @mouseMove="apexMouseMove"
-        @mouseLeave="apexMouseLeave"
+        @animation-end="apexAnimationEnd"
+        @mouse-move="apexMouseMove"
+        @mouse-leave="apexMouseLeave"
         @scrolled="apexScrolled"
       >
       </apexchart>
@@ -40,16 +40,16 @@
         <v-col class="width-constraint">
           <VcsTextField
             id="vp-scaleFactor"
+            v-model.number="scaleFactorSave"
             type="number"
             :step="1"
             :min="0.0"
             show-spin-buttons
             :decimals="2"
+            :disabled="nnActive"
             @focusin="scaleFactorManuallySet = true"
             @focusout="scaleFactorManuallySet = false"
             @input="callScaleFactor"
-            :disabled="nnActive"
-            v-model.number="scaleFactorSave"
           />
         </v-col>
       </v-row>
@@ -57,23 +57,22 @@
   </v-container>
 </template>
 <script lang="ts">
-  import { defineComponent, inject, onUnmounted, Ref, ref } from 'vue';
+  import type { Ref } from 'vue';
+  import { defineComponent, inject, onUnmounted, ref } from 'vue';
   import { VCol, VContainer, VRow, VCard, VIcon } from 'vuetify/components';
-  import {
-    NotificationType,
-    VcsLabel,
-    VcsTextField,
-    VcsUiApp,
-  } from '@vcmap/ui';
+  import type { VcsUiApp } from '@vcmap/ui';
+  import { NotificationType, VcsLabel, VcsTextField } from '@vcmap/ui';
   import VueApexCharts from 'vue3-apexcharts';
-  import { HeightProfilePlugin } from 'src';
-  import type { ApexChartContext, ChartObject, ApexConfig } from 'apexcharts';
-  import { ChartMeasurement } from 'apexcharts';
+  import type { HeightProfilePlugin } from 'src';
+  import type {
+    ApexChartContext,
+    ChartObject,
+    ApexConfig,
+    ChartMeasurement,
+  } from 'apexcharts';
   import { name } from '../package.json';
-  import {
-    HeightProfileFeature,
-    resultCollectionSymbol,
-  } from './heightProfileFeature.js';
+  import type { HeightProfileFeature } from './heightProfileFeature.js';
+  import { resultCollectionSymbol } from './heightProfileFeature.js';
   import { addScaleFactorToGraph, placeTooltip, setupChart } from './chart.js';
   import {
     addMeasurementAnnotationsToGraph,

@@ -22,8 +22,8 @@
         @click="addToWorkspace()"
       />
       <VcsFormButton
-        variant="filled"
         :id="action.name"
+        variant="filled"
         :disabled="isCreateSession"
         :tooltip="action.title"
         @click.stop="action.callback($event)"
@@ -49,13 +49,12 @@
     Projection,
     SessionType,
   } from '@vcmap/core';
+  import type { VcsUiApp, WindowState } from '@vcmap/ui';
   import {
     CollectionComponentStandalone,
     VcsDataTable,
     VcsFormButton,
     VcsFormSection,
-    VcsUiApp,
-    WindowState,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
   import {
@@ -86,6 +85,7 @@
         required: true,
       },
     },
+    emits: ['update-title'],
     setup(props, { emit, attrs }) {
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
@@ -208,7 +208,9 @@
         workspaceAddedListener();
         destroyEditAction();
         destroy();
-        listeners.forEach((listener) => listener());
+        listeners.forEach((listener) => {
+          listener();
+        });
       });
 
       return {

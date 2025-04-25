@@ -1,29 +1,28 @@
-import {
+import type {
   EditorCollectionComponentClass,
-  ToolboxType,
   VcsAction,
   VcsUiApp,
-  WindowSlot,
 } from '@vcmap/ui';
-import {
+import { ToolboxType, WindowSlot } from '@vcmap/ui';
+import type {
   CreateFeatureSession,
   EditGeometrySession,
+  VectorLayer,
+} from '@vcmap/core';
+import {
   GeometryType,
   SessionType,
   startCreateFeatureSession,
   startEditGeometrySession,
-  VectorLayer,
 } from '@vcmap/core';
-import { nextTick, reactive, ShallowRef, watch } from 'vue';
-import Feature from 'ol/Feature';
-import { Geometry } from 'ol/geom';
-import {
-  getHeightProfileEditorId,
-  HeightProfileItem,
-} from './heightProfileEditorHelper.js';
+import type { ShallowRef } from 'vue';
+import { nextTick, reactive, watch } from 'vue';
+import type Feature from 'ol/Feature';
+import type { HeightProfileItem } from './heightProfileEditorHelper.js';
+import { getHeightProfileEditorId } from './heightProfileEditorHelper.js';
 import HeightProfileWrapper from '../CreateProfileFeatureWrapper.vue';
 import type { HeightProfilePlugin } from '../index.js';
-import { HeightProfileSessionType } from './sessionHelper.js';
+import type { HeightProfileSessionType } from './sessionHelper.js';
 import { name } from '../../package.json';
 
 export function createCreateAction(
@@ -90,7 +89,7 @@ export function createCreateAction(
 
 export function createEditAction(
   app: VcsUiApp,
-  feature: Feature<Geometry>,
+  feature: Feature,
   plugin: HeightProfilePlugin,
 ): { action: VcsAction; destroy: () => void } {
   const action = reactive<VcsAction>({

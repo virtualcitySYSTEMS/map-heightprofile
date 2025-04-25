@@ -1,4 +1,4 @@
-import { Ref } from 'vue';
+import type { Ref } from 'vue';
 import type { ChartObject } from 'apexcharts';
 import { getLogger } from '@vcsuite/logger';
 import { name } from '../../package.json';
@@ -86,7 +86,7 @@ function setScaleFactorLoop(
  * @param {Ref<number>} scaleFactorInitial - Reference to the initial scale factor.
  * @returns {void}
  */
-// eslint-disable-next-line import/prefer-default-export
+
 export function setScaleFactor(
   chart: ChartObject,
   scaleFactorSave: Ref<number>,

@@ -13,13 +13,15 @@
   </div>
 </template>
 <script lang="ts">
-  import { defineComponent, inject, onUnmounted, PropType, ref } from 'vue';
-  import { VcsHelp, VcsUiApp, WindowState } from '@vcmap/ui';
+  import type { PropType } from 'vue';
+  import { defineComponent, inject, onUnmounted, ref } from 'vue';
+  import type { VcsUiApp, WindowState } from '@vcmap/ui';
+  import { VcsHelp } from '@vcmap/ui';
   import { SessionType } from '@vcmap/core';
   import { getLogger } from '@vcsuite/logger';
   import { name } from '../package.json';
   import HeightProfileEditor from './HeightProfileEditor.vue';
-  import { HeightProfilePlugin } from './index.js';
+  import type { HeightProfilePlugin } from './index.js';
 
   export default defineComponent({
     name: 'CreateProfileFeatureWrapper',
@@ -33,6 +35,7 @@
         default: () => ({}),
       },
     },
+    emits: ['close'],
     setup(props, { emit }) {
       const { windowState } = props;
       const app = inject<VcsUiApp>('vcsApp')!;
@@ -63,7 +66,7 @@
         });
 
         onUnmounted(() => {
-          if (creationFinished.value === false) {
+          if (!creationFinished.value) {
             session.stop();
           }
           sessionListener();

@@ -1,20 +1,14 @@
 import { getDefaultHighlightStyle } from '@vcmap/core';
-import {
-  EditorCollectionComponentClass,
-  makeEditorCollectionComponentClass,
-  VcsUiApp,
-} from '@vcmap/ui';
+import type { EditorCollectionComponentClass, VcsUiApp } from '@vcmap/ui';
+import { makeEditorCollectionComponentClass } from '@vcmap/ui';
 import { watch } from 'vue';
-import { Style } from 'ol/style';
+import type { Style } from 'ol/style';
 import type { HeightProfilePlugin } from './index.js';
 import HeightProfileEditorComponent from './HeightProfileEditor.vue';
 import { name } from '../package.json';
-import {
-  getHeightProfileEditorId,
-  HeightProfileItem,
-} from './helper/heightProfileEditorHelper.js';
+import type { HeightProfileItem } from './helper/heightProfileEditorHelper.js';
+import { getHeightProfileEditorId } from './helper/heightProfileEditorHelper.js';
 
-// eslint-disable-next-line import/prefer-default-export
 export async function createCategory(
   app: VcsUiApp,
   plugin: HeightProfilePlugin,
@@ -54,13 +48,12 @@ export async function createCategory(
         (id) => !selectedIds.includes(id),
       );
 
-      const objectsToSelect: Record<string, Style> = idsOnlySelected.reduce(
-        (acc, id) => {
-          acc[id] = highlightStyle;
-          return acc;
-        },
-        {} as Record<string, Style>,
-      );
+      const objectsToSelect: Record<string, Style> = idsOnlySelected.reduce<
+        Record<string, Style>
+      >((acc, id) => {
+        acc[id] = highlightStyle;
+        return acc;
+      }, {});
       plugin.layer.featureVisibility.highlight(objectsToSelect);
       plugin.layer.featureVisibility.unHighlight(idsOnlyOldSelected);
     },
@@ -121,7 +114,9 @@ export async function createCategory(
     editorCollection,
     destroy: (): void => {
       workspaceSelectionWatcher();
-      listeners.forEach((listener) => listener());
+      listeners.forEach((listener) => {
+        listener();
+      });
     },
   };
 }

@@ -14,10 +14,10 @@
           <v-col>
             <VcsTextField
               id="vp-resolution"
+              v-model.number="resolution"
               type="number"
               :step="1"
               show-spin-buttons
-              v-model.number="resolution"
               :rules="[resolutionRule]"
             />
           </v-col>
@@ -31,8 +31,8 @@
           <v-col>
             <VcsSelect
               id="vp-classification-type"
-              :items="terrainselectvalues"
               v-model="elevationType"
+              :items="terrainselectvalues"
             />
           </v-col>
         </v-row>
@@ -66,14 +66,8 @@
   </v-sheet>
 </template>
 <script lang="ts">
-  import {
-    Ref,
-    defineComponent,
-    inject,
-    onUnmounted,
-    ref,
-    onMounted,
-  } from 'vue';
+  import type { Ref } from 'vue';
+  import { defineComponent, inject, onUnmounted, ref, onMounted } from 'vue';
   import {
     VCol,
     VRow,
@@ -87,23 +81,26 @@
   } from 'vuetify/components';
 
   import { v4 as uuidv4 } from 'uuid';
+  import type {
+    VcsUiApp,
+    CollectionComponentClass,
+    CollectionComponentListItem,
+  } from '@vcmap/ui';
   import {
     VcsFormSection,
     VcsFormButton,
-    VcsUiApp,
     VcsLabel,
     VcsSelect,
     VcsTextField,
     NotificationType,
-    CollectionComponentClass,
-    CollectionComponentListItem,
   } from '@vcmap/ui';
 
-  import { CesiumMap, Collection } from '@vcmap/core';
-  import { LineString } from 'ol/geom.js';
+  import type { Collection } from '@vcmap/core';
+  import { CesiumMap } from '@vcmap/core';
+  import type { LineString } from 'ol/geom.js';
   import { name } from '../package.json';
   import type { HeightProfilePlugin } from './index.js';
-  import {
+  import type {
     ElevationType,
     HeightProfileResult,
   } from './setupResultCollectionComponent.js';
@@ -194,7 +191,7 @@
             createHeightProfileCalculation(
               geometry,
               resolution.value,
-              elevationType.value as ElevationType,
+              elevationType.value,
               1000,
               scene,
               app,
@@ -260,6 +257,7 @@
               }
               dialogVisible.value = false;
             })
+            // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
             .catch((err) => {
               app.notifier.add({
                 type: NotificationType.ERROR,

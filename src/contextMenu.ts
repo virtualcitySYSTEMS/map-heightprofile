@@ -1,11 +1,9 @@
-import { VcsAction, VcsUiApp } from '@vcmap/ui';
+import type { VcsAction, VcsUiApp } from '@vcmap/ui';
 import { SessionType, vcsLayerName } from '@vcmap/core';
-import { HeightProfilePlugin } from 'src';
-import Feature from 'ol/Feature';
-import { Geometry } from 'ol/geom.js';
+import type { HeightProfilePlugin } from 'src';
+import type Feature from 'ol/Feature';
 import { createEditAction } from './helper/actionHelper.js';
 
-// eslint-disable-next-line import/prefer-default-export
 export function createContextMenu(
   app: VcsUiApp,
   plugin: HeightProfilePlugin,
@@ -17,7 +15,7 @@ export function createContextMenu(
 
     if (event.feature && event.feature[vcsLayerName] === plugin.layer.name) {
       if (plugin.session.value?.type !== SessionType.CREATE) {
-        const feature = event.feature as Feature<Geometry>;
+        const feature = event.feature as Feature;
 
         const { action: editAction, destroy: editDestroy } = createEditAction(
           app,

@@ -1,17 +1,18 @@
 import { Projection, VcsEvent } from '@vcmap/core';
-import { Coordinate } from 'ol/coordinate';
-import { LineString } from 'ol/geom.js';
+import type { Coordinate } from 'ol/coordinate';
+import type { LineString } from 'ol/geom.js';
+import type { Scene } from '@vcmap-cesium/engine';
 import {
   Cartographic,
   LinearSpline,
   Cartesian3,
   EllipsoidGeodesic,
   Math as CesiumMath,
-  Scene,
   sampleTerrainMostDetailed,
 } from '@vcmap-cesium/engine';
-import { NotificationType, VcsUiApp } from '@vcmap/ui';
-import { ElevationType } from '../setupResultCollectionComponent.js';
+import type { VcsUiApp } from '@vcmap/ui';
+import { NotificationType } from '@vcmap/ui';
+import type { ElevationType } from '../setupResultCollectionComponent.js';
 
 type Result<T, E = Error> =
   | { ok: true; readonly points: T }
@@ -41,7 +42,7 @@ async function heightCalc(
   }
   return scratchCartographic;
 }
-// eslint-disable-next-line import/prefer-default-export
+
 export function createHeightProfileCalculation(
   geometry: LineString,
   resolution: number,

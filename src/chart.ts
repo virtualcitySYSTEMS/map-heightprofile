@@ -1,16 +1,18 @@
-import { Collection, Projection } from '@vcmap/core';
-import { Coordinate } from 'ol/coordinate';
+import type { Collection } from '@vcmap/core';
+import { Projection } from '@vcmap/core';
+import type { Coordinate } from 'ol/coordinate';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
-import { VcsUiApp } from '@vcmap/ui';
-import {
+import type { VcsUiApp } from '@vcmap/ui';
+import type {
   ApexConfig,
   ApexOptions,
   ChartMeasurement,
   ChartObject,
   SeriesEntry,
 } from 'apexcharts';
-import { Ref, ref } from 'vue';
+import type { Ref } from 'vue';
+import { ref } from 'vue';
 import { getLogger } from '@vcsuite/logger';
 import { name } from '../package.json';
 import type { HeightProfilePlugin } from './index.js';
@@ -196,7 +198,7 @@ export function setupChart(
             {
               icon: iconReset,
               index: 5,
-              title: `${String(app.vueI18n.t('heightProfile.reset'))}`,
+              title: String(app.vueI18n.t('heightProfile.reset')),
               class: 'custom-icon-reset',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -236,7 +238,7 @@ export function setupChart(
             {
               icon: 'NN',
               index: 7,
-              title: `${String(app.vueI18n.t('heightProfile.nn'))}`,
+              title: String(app.vueI18n.t('heightProfile.nn')),
               class: 'custom-icon-nn',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -295,7 +297,7 @@ export function setupChart(
             {
               icon: iconMeasure,
               index: 9,
-              title: `${String(app.vueI18n.t('heightProfile.measurement.start'))}`,
+              title: String(app.vueI18n.t('heightProfile.measurement.start')),
               class: 'custom-icon-start',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(_chart, _options, _e): void {
@@ -322,7 +324,7 @@ export function setupChart(
             {
               icon: iconClear,
               index: 10,
-              title: `${String(app.vueI18n.t('heightProfile.measurement.clear'))}`,
+              title: String(app.vueI18n.t('heightProfile.measurement.clear')),
               class: 'custom-icon-clear',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -372,12 +374,12 @@ export function setupChart(
     xaxis: {
       type: 'numeric',
       title: {
-        text: `${String(app.vueI18n.t('heightProfile.distance'))}`,
+        text: String(app.vueI18n.t('heightProfile.distance')),
       },
     },
     yaxis: {
       title: {
-        text: `${String(app.vueI18n.t('heightProfile.height'))}`,
+        text: String(app.vueI18n.t('heightProfile.height')),
       },
       labels: {
         formatter(value: number): string {

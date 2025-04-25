@@ -1,16 +1,13 @@
-import {
+import type {
   CreateFeatureSession,
   EditGeometrySession,
   GeometryType,
-  SessionType,
 } from '@vcmap/core';
-import {
-  EditorCollectionComponentClass,
-  NotificationType,
-  VcsUiApp,
-  WindowSlot,
-} from '@vcmap/ui';
-import { nextTick, shallowRef, ShallowRef, watch } from 'vue';
+import { SessionType } from '@vcmap/core';
+import type { EditorCollectionComponentClass, VcsUiApp } from '@vcmap/ui';
+import { NotificationType, WindowSlot } from '@vcmap/ui';
+import type { ShallowRef } from 'vue';
+import { nextTick, shallowRef, watch } from 'vue';
 import {
   isHeightProfileFeature,
   resultCollectionComponentSymbol,
@@ -19,8 +16,8 @@ import {
 import HeightProfileParameterComponent, {
   windowIdSetParameter,
 } from '../HeightProfileParameterComponent.vue';
+import type { HeightProfileItem } from './heightProfileEditorHelper.js';
 import {
-  HeightProfileItem,
   getHeightProfileEditorId,
   addHeightProfileEditorComponent,
 } from './heightProfileEditorHelper.js';

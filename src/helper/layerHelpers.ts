@@ -4,12 +4,12 @@ import {
   mercatorProjection,
   VectorLayer,
 } from '@vcmap/core';
-import { VcsUiApp } from '@vcmap/ui';
-import Feature from 'ol/Feature';
-import { EventsKey } from 'ol/events';
+import type { VcsUiApp } from '@vcmap/ui';
+import type Feature from 'ol/Feature';
+import type { EventsKey } from 'ol/events';
 import { unByKey } from 'ol/Observable';
+import type { HeightProfileFeature } from '../heightProfileFeature.js';
 import {
-  HeightProfileFeature,
   resultCollectionComponentSymbol,
   resultCollectionSymbol,
 } from '../heightProfileFeature.js';
@@ -102,7 +102,9 @@ export function createSourceListeners(
   );
 
   return (): void => {
-    featureListeners.forEach((listener) => listener());
+    featureListeners.forEach((listener) => {
+      listener();
+    });
     featureListeners.clear();
     unByKey(sourceChangeFeature);
     unByKey(sourceRemoveFeature);

@@ -1,3 +1,7 @@
+# v2.0.2
+
+- added a configuration of the decimal places
+
 # v2.0.1
 
 - changed css styles to not pollute the global css namespace

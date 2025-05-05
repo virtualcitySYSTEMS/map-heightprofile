@@ -102,6 +102,7 @@ export function setupChart(
   normalNMode: Ref<boolean>,
   measurementActive: Ref<boolean>,
   scaleFactorManuallySet: Ref<boolean>,
+  decimalPlaces: number,
 ): {
   series: SeriesEntry[];
   chartOptions: ApexOptions;
@@ -138,6 +139,16 @@ export function setupChart(
   ): string => {
     return `<div class="legend-item-label" id="test">${seriesName}</div>`;
   };
+  const yaxisLabelsFormatter = (): { formatter(value: number): string } => ({
+    formatter(value: number): string {
+      const fixed = value.toFixed(decimalPlaces);
+      const [integerPart, decimalPart] = fixed.split('.');
+      if (decimalPart && Number(decimalPart) === 0) {
+        return integerPart;
+      }
+      return fixed;
+    },
+  });
 
   const iconPlus =
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"  viewBox="0 0 16 16"> <path id="Path_444" d="M25,20a1.154,1.154,0,0,1-1.154,1.154H21.538a.385.385,0,0,0-.385.385v2.308a1.154,1.154,0,0,1-2.308,0V21.538a.385.385,0,0,0-.385-.385H16.154a1.154,1.154,0,1,1,0-2.308h2.308a.385.385,0,0,0,.385-.385V16.154a1.154,1.154,0,1,1,2.308,0v2.308a.385.385,0,0,0,.385.385h2.308A1.154,1.154,0,0,1,25,20Z" transform="translate(-12 -12)" fill="currentColor"/><rect id="size" width="16" height="16" fill="none" /></svg>';
@@ -160,16 +171,11 @@ export function setupChart(
       height: 350,
       width: 1400,
       type: 'line',
-      zoom: {
-        enabled: true,
-      },
+      zoom: { enabled: true },
       selection: {
         enabled: true,
         type: 'x',
-        fill: {
-          color: '#24292e',
-          opacity: 0.1,
-        },
+        fill: { color: '#24292e', opacity: 0.1 },
         stroke: {
           width: 1,
           dashArray: 3,
@@ -203,15 +209,7 @@ export function setupChart(
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
                 chart
-                  .updateOptions({
-                    yaxis: {
-                      labels: {
-                        formatter(value: number): string {
-                          return Math.floor(value).toString();
-                        },
-                      },
-                    },
-                  })
+                  .updateOptions({ yaxis: { labels: yaxisLabelsFormatter() } })
                   .catch(() => {
                     getLogger(name).error('failed to update options');
                   });
@@ -249,13 +247,7 @@ export function setupChart(
                   }
                   chart
                     .updateOptions({
-                      yaxis: {
-                        labels: {
-                          formatter(value: number): string {
-                            return Math.floor(value).toString();
-                          },
-                        },
-                      },
+                      yaxis: { labels: yaxisLabelsFormatter() },
                     })
                     .catch(() => {
                       getLogger(name).error('failed to update options');
@@ -269,14 +261,7 @@ export function setupChart(
                   }
                   chart
                     .updateOptions({
-                      yaxis: {
-                        min: 0,
-                        labels: {
-                          formatter(value: number): string {
-                            return Math.floor(value).toString();
-                          },
-                        },
-                      },
+                      yaxis: { min: 0, labels: yaxisLabelsFormatter() },
                     })
                     .catch(() => {
                       getLogger(name).error('failed to update options');
@@ -343,49 +328,34 @@ export function setupChart(
           ],
         },
         export: {
-          csv: {
-            filename: 'graph',
-          },
-          svg: {
-            filename: 'graph',
-          },
-          png: {
-            filename: 'graph',
-          },
+          csv: { filename: 'graph' },
+          svg: { filename: 'graph' },
+          png: { filename: 'graph' },
         },
       },
     },
-    theme: {
-      mode: 'light',
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      width: 3,
-      curve: 'straight',
-    },
+    theme: { mode: 'light' },
+    dataLabels: { enabled: false },
+    stroke: { width: 3, curve: 'straight' },
     grid: {
-      row: {
-        colors: ['#f3f3f3', 'transparent'],
-        opacity: 0.5,
-      },
+      row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 },
     },
     xaxis: {
       type: 'numeric',
-      title: {
-        text: String(app.vueI18n.t('heightProfile.distance')),
-      },
+      title: { text: String(app.vueI18n.t('heightProfile.distance')) },
     },
     yaxis: {
-      title: {
-        text: String(app.vueI18n.t('heightProfile.height')),
-      },
-      labels: {
-        formatter(value: number): string {
-          return Math.floor(value).toString();
+      title: { text: String(app.vueI18n.t('heightProfile.height')) },
+      labels: yaxisLabelsFormatter(),
+    },
+    tooltip: {
+      x: { show: false },
+      y: [
+        {
+          formatter: (value: number): string =>
+            `${value.toFixed(decimalPlaces)} m`,
         },
-      },
+      ],
     },
     legend: {
       formatter: customLegendFormatter,

@@ -1,5 +1,6 @@
 import type {
   EditorCollectionComponentClass,
+  PluginConfigEditor,
   VcsPlugin,
   VcsUiApp,
 } from '@vcmap/ui';
@@ -23,18 +24,30 @@ import {
 } from './helper/layerHelpers.js';
 import { createContextMenu } from './contextMenu.js';
 import { createImportExport } from './helper/importExportHelper.js';
+import HeightProfileConfigEditor from './HeightProfileConfigEditor.vue';
 
-type PluginConfig = Record<never, never>;
-type PluginState = Record<never, never>;
+export type HeightProfileConfig = { decimalPlaces?: number };
+type HeightProfileState = Record<never, never>;
 
-export type HeightProfilePlugin = VcsPlugin<PluginConfig, PluginState> & {
+export type HeightProfilePlugin = VcsPlugin<
+  HeightProfileConfig,
+  HeightProfileState
+> & {
+  readonly config: Required<HeightProfileConfig>;
   readonly layer: VectorLayer;
   readonly measurementLayer: VectorLayer;
   readonly heightProfileCategory: EditorCollectionComponentClass<HeightProfileItem>;
   readonly session: ShallowRef<HeightProfileSessionType>;
 };
 
-export default function plugin(): HeightProfilePlugin {
+export function getDefaultOptions(): Required<HeightProfileConfig> {
+  return { decimalPlaces: 1 };
+}
+
+export default function plugin(
+  options: HeightProfileConfig,
+): HeightProfilePlugin {
+  const config = { ...getDefaultOptions(), ...options };
   let layer: VectorLayer | undefined;
   let measurementLayer: VectorLayer | undefined;
   let heightProfileCategory:
@@ -53,6 +66,9 @@ export default function plugin(): HeightProfilePlugin {
     },
     get mapVersion(): string {
       return mapVersion;
+    },
+    get config(): Required<HeightProfileConfig> {
+      return config;
     },
     get layer(): VectorLayer {
       if (!layer) {
@@ -126,17 +142,14 @@ export default function plugin(): HeightProfilePlugin {
 
       return Promise.resolve();
     },
-    /**
-     * should return all default values of the configuratio n
-     */
-    getDefaultOptions(): PluginConfig {
-      return {};
-    },
-    /**
-     * should return the plugin's serialization excluding all default value s
-     */
-    toJSON(): PluginConfig {
-      return {};
+    getDefaultOptions,
+    toJSON(): HeightProfileConfig {
+      const serial: HeightProfileConfig = {};
+      const defaultOptions = getDefaultOptions();
+      if (this.config.decimalPlaces !== defaultOptions.decimalPlaces) {
+        serial.decimalPlaces = this.config.decimalPlaces;
+      }
+      return serial;
     },
     i18n: {
       en: {
@@ -199,7 +212,6 @@ export default function plugin(): HeightProfilePlugin {
           },
           reset: 'Resetting the adjustments to the graph',
           nn: 'Toggle Normal Null Mode',
-
           helperText: {
             part1:
               'To perform measurements in the profile click on the chart. Define two points of interest. A third click starts a new measurement.',
@@ -208,6 +220,10 @@ export default function plugin(): HeightProfilePlugin {
           layerWarning:
             'Layer configuration changed. The diagram may differ from the map display.',
           parameterComponent: 'Calculate Profile',
+          config: {
+            title: 'Height Profile Configuration',
+            decimalPlaces: 'Number of decimals on graph',
+          },
         },
       },
       de: {
@@ -278,8 +294,20 @@ export default function plugin(): HeightProfilePlugin {
           layerWarning:
             'Ebenenkonfiguration geändert. Das Diagramm kann von der Kartendarstellung abweichen.',
           parameterComponent: 'Profil berechnen',
+          config: {
+            title: 'Höhenprofil Konfiguration',
+            decimalPlaces: 'Dezimalstellen im Graphen',
+          },
         },
       },
+    },
+    getConfigEditors(): PluginConfigEditor<object>[] {
+      return [
+        {
+          component: HeightProfileConfigEditor,
+          title: 'heightProfile.config.title',
+        },
+      ];
     },
     destroy(): void {
       destroyListeners.forEach((listener) => {

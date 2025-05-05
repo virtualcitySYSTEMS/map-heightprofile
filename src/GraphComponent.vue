@@ -87,8 +87,8 @@
       VIcon,
       VRow,
       VContainer,
-      VcsTextField,
       VcsLabel,
+      VcsTextField,
       VCard,
       apexchart: VueApexCharts,
     },
@@ -147,6 +147,7 @@
         normalNMode,
         measurementActive,
         scaleFactorManuallySet,
+        plugin.config.decimalPlaces,
       );
 
       function callScaleFactor(): void {

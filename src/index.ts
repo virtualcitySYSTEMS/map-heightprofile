@@ -156,7 +156,6 @@ export default function plugin(
         heightProfile: {
           toolbarTitle: 'Create height profile',
           titleTemporary: 'Height Profile',
-          heightProfileCalculated: 'Height Profile Calculated',
           distance: 'Distance (m)',
           height: 'Height (m)',
           resolutionError: 'The resolution must be above 0',
@@ -166,22 +165,16 @@ export default function plugin(
             resolution:
               'The resolution defines the distance between the sampling points of the height profile. The smaller the resolution, the more detailed the profile.',
           },
-          header: {
-            title: 'Height Profile',
-          },
           collection: {
             add: 'Calculate new profile',
           },
           edit: 'Edit Geometry',
-          delete: 'Delete',
           title: 'Height Profile',
           create: 'Height Profile',
-          profile: 'Profile',
           diagram: 'Calculated Profiles: Diagram',
           classificationType: { DGM: 'DTM', DOM: 'DSM' },
           resolution: 'Resolution [m]',
           results: 'Start Calculation',
-          new: 'New',
           pointsMultiple: 'Name',
           points: 'Anchor Points',
           point: 'Point',
@@ -190,9 +183,7 @@ export default function plugin(
           calcResults: 'Calculated Profiles',
           resolutionProblem:
             'Not enough sample points could be generated. Select a higher resolution or a longer profile line.',
-          calc: 'Calculate',
-          cancel: 'Cancel',
-          dialogText: 'The Height Profile is being calculated.',
+          dialogText: 'The Height Profile is being calculated',
           graphAction: 'Show Graph',
           measureLine: 'Measurement Line',
           measurementWarning:
@@ -207,16 +198,10 @@ export default function plugin(
             'The Scale Factor indicates by how much the elevation values are scaled compared to the horizontal distances in a profile.',
           measurement: {
             start: 'Start Measurement in Graph',
-            stop: 'Stop Measurement in Graph',
             clear: 'Delete Measurement in Graph',
           },
           reset: 'Resetting the adjustments to the graph',
           nn: 'Toggle Normal Null Mode',
-          helperText: {
-            part1:
-              'To perform measurements in the profile click on the chart. Define two points of interest. A third click starts a new measurement.',
-            part2: '2.  Select the profile in the map to edit it.',
-          },
           layerWarning:
             'Layer configuration changed. The diagram may differ from the map display.',
           parameterComponent: 'Calculate Profile',
@@ -230,14 +215,10 @@ export default function plugin(
         heightProfile: {
           toolbarTitle: 'Höhenprofil erstellen',
           titleTemporary: 'Höhenprofil',
-          heightProfileCalculated: 'Höhenprofil berechnet',
           heightProfileCanceled: 'Berechnung des Höhenprofiles abgebrochen!',
           tooltip: {
             resolution:
               'Die Auflösung definiert den Abstand zwischen den Abtastpunkten des Höhenprofils. Je kleiner die Auflösung ist, desto detaillierter ist das Profil.',
-          },
-          header: {
-            title: 'Höhenprofil',
           },
           collection: {
             add: 'Neues Profil berechnen',
@@ -246,13 +227,11 @@ export default function plugin(
           height: 'Höhe (m)',
           resolutionError: 'Die Auflösung muss größer als 0 sein.',
           edit: 'Geometrie bearbeiten',
-          delete: 'Löschen',
           title: 'Höhenprofil',
           create: 'Höhenprofil',
           classificationType: { DGM: 'DGM', DOM: 'DOM' },
           resolution: 'Auflösung [m]',
           results: 'Berechnung starten',
-          new: 'Neu',
           pointsMultiple: 'Name',
           points: 'Stützpunkte',
           point: 'Punkt',
@@ -260,10 +239,7 @@ export default function plugin(
           settings: 'Einstellungen',
           classification: 'Bezugsoberfläche',
           calcResults: 'Berechnete Profile',
-          calc: 'Berechnen',
-          cancel: 'Abbrechen',
-          profile: 'Profil',
-          dialogText: 'Das Höhenprofil wird berechnet.',
+          dialogText: 'Das Höhenprofil wird berechnet',
           graphAction: 'Graph anzeigen',
           measureLine: 'Messlinie',
           measurementWarning:
@@ -278,19 +254,12 @@ export default function plugin(
             'Der Überhöhungsfaktor gibt an, um wie viel die Höhenwerte im Vergleich zu den horizontalen Distanzen im Höhenprofil vergrößert dargestellt werden.',
           measurement: {
             start: 'Messung im Graphen starten',
-            stop: 'Messung im Graphen stoppen',
             clear: 'Messung im Graphen löschen',
           },
           reset: 'Zurücksetzen der Anpassungen des Graphen',
           nn: 'Normal Null Modus umschalten',
           resolutionProblem:
             'Es konnte nicht ausreichen Samplepunkte generiert werden. Wählen Sie eine höhere Auflösung oder eine längere Profillinie.',
-          helperText: {
-            part1:
-              'Um Messungen im Profil durchzuführen, klicken Sie auf das Diagramm. Definieren Sie zwei Punkte von Interesse. Ein dritter Klick startet eine neue Messung.',
-            part2:
-              '2.  Wählen Sie das Profil in der Karte aus, um es zu bearbeiten.',
-          },
           layerWarning:
             'Ebenenkonfiguration geändert. Das Diagramm kann von der Kartendarstellung abweichen.',
           parameterComponent: 'Profil berechnen',

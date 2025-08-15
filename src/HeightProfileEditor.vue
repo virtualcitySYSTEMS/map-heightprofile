@@ -1,38 +1,27 @@
 <template>
-  <v-sheet>
+  <VcsWorkspaceWrapper
+    :disable-add="isCreateSession || currentIsPersisted"
+    :disable-new="isCreateSession"
+    @add-clicked="addToWorkspace"
+    @new-clicked="newProfile"
+  >
     <VcsFormSection
       :heading="`heightProfile.points`"
       :header-actions="[editAction]"
     >
       <v-container class="pa-0">
-        <vcs-data-table
+        <VcsDataTable
           item-key="id"
           :headers="headers"
           :show-searchbar="false"
           :items="points"
-        >
-        </vcs-data-table
-      ></v-container>
+        />
+      </v-container>
     </VcsFormSection>
-    <CollectionComponentStandalone> </CollectionComponentStandalone>
-    <div class="d-flex w-full justify-space-between px-2 pt-2 pb-1">
-      <VcsFormButton
-        icon="$vcsComponentsPlus"
-        :disabled="isCreateSession || currentIsPersisted"
-        @click="addToWorkspace()"
-      />
-      <VcsFormButton
-        :id="action.name"
-        variant="filled"
-        :disabled="isCreateSession"
-        :tooltip="action.title"
-        @click.stop="action.callback($event)"
-      >
-        {{ $t('heightProfile.new') }}
-      </VcsFormButton>
-    </div>
-  </v-sheet>
+    <CollectionComponentStandalone />
+  </VcsWorkspaceWrapper>
 </template>
+
 <script lang="ts">
   import {
     computed,
@@ -42,7 +31,7 @@
     provide,
     ref,
   } from 'vue';
-  import { VContainer, VSheet } from 'vuetify/components';
+  import { VContainer } from 'vuetify/components';
   import {
     getDefaultProjection,
     mercatorProjection,
@@ -53,14 +42,11 @@
   import {
     CollectionComponentStandalone,
     VcsDataTable,
-    VcsFormButton,
     VcsFormSection,
+    VcsWorkspaceWrapper,
   } from '@vcmap/ui';
   import { unByKey } from 'ol/Observable.js';
-  import {
-    createCreateAction,
-    createEditAction,
-  } from './helper/actionHelper.js';
+  import { createEditAction, createNewProfile } from './helper/actionHelper.js';
   import {
     type HeightProfileFeature,
     resultCollectionComponentSymbol,
@@ -69,14 +55,14 @@
   import type { HeightProfilePlugin } from './index.js';
 
   export const windowIdHeightProfileEditor = 'heightProfileEditor_window_id';
+
   export default defineComponent({
     name: 'HeightProfileEditorComponent',
     components: {
-      VSheet,
-      VcsFormSection,
-      VcsDataTable,
-      VcsFormButton,
       VContainer,
+      VcsDataTable,
+      VcsFormSection,
+      VcsWorkspaceWrapper,
       CollectionComponentStandalone,
     },
     props: {
@@ -89,17 +75,13 @@
     setup(props, { emit, attrs }) {
       const app = inject<VcsUiApp>('vcsApp')!;
       const plugin = app.plugins.getByKey(name) as HeightProfilePlugin;
+      const { layer, session, heightProfileCategory: category } = plugin;
       const isCreateSession = computed(
-        () => plugin.session.value?.type === SessionType.CREATE,
-      );
-      const isEditSession = computed(
-        () => plugin.session.value?.type === SessionType.EDIT_GEOMETRY,
+        () => session.value?.type === SessionType.CREATE,
       );
       const points = ref();
-      const feature = (plugin.layer.getFeatureById(props.featureId) ||
-        plugin.heightProfileCategory.collection.getByKey(
-          props.featureId,
-        )) as HeightProfileFeature;
+      const feature = (layer.getFeatureById(props.featureId) ||
+        category.collection.getByKey(props.featureId)) as HeightProfileFeature;
 
       function setPointsFromFeature(featureItem: HeightProfileFeature): void {
         let count = 0;
@@ -127,12 +109,9 @@
         emit('update-title', String(feature.getProperty('name')));
       }
       const currentIsPersisted = ref(
-        plugin.heightProfileCategory.collection.hasKey(props.featureId),
+        category.collection.hasKey(props.featureId),
       );
-      if (
-        currentIsPersisted.value &&
-        plugin.heightProfileCategory.selection.value.length > 0
-      ) {
+      if (currentIsPersisted.value && category.selection.value.length > 0) {
         if (feature) {
           if ((attrs['window-state'] as WindowState)?.headerTitle) {
             (attrs['window-state'] as WindowState).headerTitle = String(
@@ -148,19 +127,18 @@
 
       function addToWorkspace(): void {
         if (feature) {
-          plugin.heightProfileCategory.collection.add(feature);
+          category.collection.add(feature);
           emitTitle();
         }
       }
 
-      const workspaceAddedListener =
-        plugin.heightProfileCategory.collection.added.addEventListener(
-          (item) => {
-            if (feature === item) {
-              currentIsPersisted.value = true;
-            }
-          },
-        );
+      const workspaceAddedListener = category.collection.added.addEventListener(
+        (item) => {
+          if (feature === item) {
+            currentIsPersisted.value = true;
+          }
+        },
+      );
 
       const collectionComponent = feature[resultCollectionComponentSymbol];
 
@@ -178,35 +156,21 @@
         }),
       ];
 
-      const { action, destroy } = createCreateAction(
-        app,
-        plugin.layer,
-        plugin.session,
-        plugin.heightProfileCategory,
-      );
-
       const headers: Array<{ title: string; value: string }> = [
-        {
-          title: 'heightProfile.pointsMultiple',
-          value: 'id',
-        },
-        {
-          title: 'X',
-          value: 'x',
-        },
-        {
-          title: 'Y',
-          value: 'y',
-        },
+        { title: 'heightProfile.pointsMultiple', value: 'id' },
+        { title: 'X', value: 'x' },
+        { title: 'Y', value: 'y' },
       ];
 
-      const { action: editAction, destroy: destroyEditAction } =
-        createEditAction(app, feature, plugin);
+      const { action: editAction, destroy } = createEditAction(
+        app,
+        feature,
+        plugin,
+      );
 
       onUnmounted(() => {
         unByKey(featureListenerGeometry!);
         workspaceAddedListener();
-        destroyEditAction();
         destroy();
         listeners.forEach((listener) => {
           listener();
@@ -217,11 +181,10 @@
         addToWorkspace,
         headers,
         points,
-        action,
         isCreateSession,
-        isEditSession,
         currentIsPersisted,
         editAction,
+        newProfile: createNewProfile.bind(null, app, layer, session, category),
       };
     },
   });

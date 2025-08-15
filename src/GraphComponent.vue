@@ -200,7 +200,7 @@
             } else {
               app.notifier.add({
                 type: NotificationType.WARNING,
-                message: String('heightProfile.measurementWarning'),
+                message: 'heightProfile.measurementWarning',
               });
             }
           }

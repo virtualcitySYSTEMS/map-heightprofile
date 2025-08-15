@@ -1,3 +1,7 @@
+# v3.0.0
+
+- Updated @vcmap/core and @vcmap/ui to version 6.2
+
 # v2.0.2
 
 - added a configuration of the decimal places

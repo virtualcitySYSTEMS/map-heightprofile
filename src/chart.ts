@@ -73,7 +73,7 @@ export function addScaleFactorToGraph(
         textAnchor: 'end',
         position: 'top',
         orientation: 'horizontal',
-        text: `${String(app.vueI18n.t('heightProfile.scaleFactor'))}: ${scaleFactor.toFixed(2).toString()}`,
+        text: `${app.vueI18n.t('heightProfile.scaleFactor')}: ${scaleFactor.toFixed(2)}`,
         style: {
           color: `rgb(${text})`,
           background: `rgb(${background})`,
@@ -204,7 +204,7 @@ export function setupChart(
             {
               icon: iconReset,
               index: 5,
-              title: String(app.vueI18n.t('heightProfile.reset')),
+              title: app.vueI18n.t('heightProfile.reset'),
               class: 'custom-icon-reset',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -236,7 +236,7 @@ export function setupChart(
             {
               icon: 'NN',
               index: 7,
-              title: String(app.vueI18n.t('heightProfile.nn')),
+              title: app.vueI18n.t('heightProfile.nn'),
               class: 'custom-icon-nn',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -282,7 +282,7 @@ export function setupChart(
             {
               icon: iconMeasure,
               index: 9,
-              title: String(app.vueI18n.t('heightProfile.measurement.start')),
+              title: app.vueI18n.t('heightProfile.measurement.start'),
               class: 'custom-icon-start',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(_chart, _options, _e): void {
@@ -309,7 +309,7 @@ export function setupChart(
             {
               icon: iconClear,
               index: 10,
-              title: String(app.vueI18n.t('heightProfile.measurement.clear')),
+              title: app.vueI18n.t('heightProfile.measurement.clear'),
               class: 'custom-icon-clear',
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               click(chart: ChartObject, _options, _e): void {
@@ -342,10 +342,10 @@ export function setupChart(
     },
     xaxis: {
       type: 'numeric',
-      title: { text: String(app.vueI18n.t('heightProfile.distance')) },
+      title: { text: app.vueI18n.t('heightProfile.distance') },
     },
     yaxis: {
-      title: { text: String(app.vueI18n.t('heightProfile.height')) },
+      title: { text: app.vueI18n.t('heightProfile.height') },
       labels: yaxisLabelsFormatter(),
     },
     tooltip: {

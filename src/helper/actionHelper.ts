@@ -25,7 +25,7 @@ import type { HeightProfilePlugin } from '../index.js';
 import type { HeightProfileSessionType } from './sessionHelper.js';
 import { name } from '../../package.json';
 
-export function createCreateAction(
+export async function createNewProfile(
   app: VcsUiApp,
   layer: VectorLayer,
   session: ShallowRef<
@@ -34,57 +34,41 @@ export function createCreateAction(
     | undefined
   >,
   heightProfileCategory: EditorCollectionComponentClass<HeightProfileItem>,
-): { action: VcsAction; destroy: () => void } {
+): Promise<void> {
   const windowIdHeightProfile = getHeightProfileEditorId(heightProfileCategory);
+  if (session.value?.type === SessionType.CREATE) {
+    session.value?.stop();
+  } else {
+    app.windowManager.remove(windowIdHeightProfile);
 
-  const action = reactive<VcsAction>({
-    name: 'heightProfile.create',
-    title: 'heightProfile.toolbarTitle',
-    icon: '$vcsElevationProfile',
-    active: false,
-    async callback(): Promise<void> {
-      if (session.value?.type === SessionType.CREATE) {
-        session.value?.stop();
-      } else {
-        app.windowManager.remove(windowIdHeightProfile);
+    const featuresToRemove = layer
+      .getFeatures()
+      .filter(
+        (feature) => !heightProfileCategory.collection.hasKey(feature.getId()),
+      )
+      .map((f) => f.getId() as string);
 
-        const featuresToRemove = layer
-          .getFeatures()
-          .filter(
-            (feature) =>
-              !heightProfileCategory.collection.hasKey(feature.getId()),
-          )
-          .map((f) => f.getId() as string);
+    layer.removeFeaturesById(featuresToRemove);
 
-        layer.removeFeaturesById(featuresToRemove);
-
-        session.value = startCreateFeatureSession(
-          app,
-          layer,
-          GeometryType.LineString,
-        );
-        const contentComponent = {
-          id: windowIdHeightProfile,
-          component: HeightProfileWrapper,
-          slot: WindowSlot.DYNAMIC_LEFT,
-          state: {
-            headerTitle: 'heightProfile.tempTitle',
-            infoUrlCallback: app.getHelpUrlCallback(
-              'tools/heightProfileTool.html#id_heightProfile_calculateProfile',
-            ),
-          },
-        };
-        await nextTick();
-        app.windowManager.add(contentComponent, name);
-      }
-    },
-  });
-
-  const destroy = watch(session, (newSession) => {
-    action.active = newSession?.type === SessionType.CREATE;
-  });
-
-  return { action, destroy };
+    session.value = startCreateFeatureSession(
+      app,
+      layer,
+      GeometryType.LineString,
+    );
+    const contentComponent = {
+      id: windowIdHeightProfile,
+      component: HeightProfileWrapper,
+      slot: WindowSlot.DYNAMIC_LEFT,
+      state: {
+        headerTitle: 'heightProfile.tempTitle',
+        infoUrlCallback: app.getHelpUrlCallback(
+          'tools/heightProfileTool.html#id_heightProfile_calculateProfile',
+        ),
+      },
+    };
+    await nextTick();
+    app.windowManager.add(contentComponent, name);
+  }
 }
 
 export function createEditAction(
@@ -123,26 +107,30 @@ export function createToolboxButton(
   session: ShallowRef<HeightProfileSessionType>,
   heightProfileCategory: EditorCollectionComponentClass<HeightProfileItem>,
 ): () => void {
-  const { action, destroy: destroyAction } = createCreateAction(
-    app,
-    layer,
-    session,
-    heightProfileCategory,
-  );
+  const action = reactive<VcsAction>({
+    name: 'heightProfile.create',
+    title: 'heightProfile.toolbarTitle',
+    icon: '$vcsElevationProfile',
+    active: false,
+    async callback(): Promise<void> {
+      await createNewProfile(app, layer, session, heightProfileCategory);
+    },
+  });
 
-  if (app.toolboxManager.has('HeightProfileEditorComponent')) {
-    app.toolboxManager.remove('HeightProfileEditorComponent');
+  const destroy = watch(session, (newSession) => {
+    action.active = newSession?.type === SessionType.CREATE;
+  });
+
+  const toolbarId = 'HeightProfileEditorComponent';
+  if (app.toolboxManager.has(toolbarId)) {
+    app.toolboxManager.remove(toolbarId);
   }
   app.toolboxManager.add(
-    {
-      id: 'HeightProfileEditorComponent',
-      type: ToolboxType.SINGLE,
-      action,
-    },
+    { id: toolbarId, type: ToolboxType.SINGLE, action },
     name,
   );
   return (): void => {
-    app.toolboxManager.remove('HeightProfileEditorComponent');
-    destroyAction();
+    app.toolboxManager.remove(toolbarId);
+    destroy();
   };
 }

@@ -83,7 +83,7 @@ export function createImportExport(
         } catch (e) {
           app.notifier.add({
             type: NotificationType.ERROR,
-            message: vueI18n.t('components.import.failure').toString(),
+            message: vueI18n.t('components.import.failure'),
           });
           return false;
         }

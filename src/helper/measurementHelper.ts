@@ -183,13 +183,13 @@ function createMeasurementPointAnnotation(
   createPointAnnotation(
     values[values.length - 2][0],
     values[values.length - 2][1],
-    `${String(app.vueI18n.t('heightProfile.point'))}-${values.length - 1}`,
+    `${app.vueI18n.t('heightProfile.point')}-${values.length - 1}`,
     chartContext,
   );
   createPointAnnotation(
     values[values.length - 1][0],
     values[values.length - 1][1],
-    `${String(app.vueI18n.t('heightProfile.point'))}-${values.length}`,
+    `${app.vueI18n.t('heightProfile.point')}-${values.length}`,
     chartContext,
   );
 }
@@ -223,7 +223,7 @@ export function startChartMeasurement(
       createPointAnnotation(
         value[0],
         value[1],
-        `${String(app.vueI18n.t('heightProfile.point'))}-${values.length + 1}`,
+        `${app.vueI18n.t('heightProfile.point')}-${values.length + 1}`,
         chartContext,
       );
       values.push(value);

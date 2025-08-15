@@ -42,43 +42,17 @@
       <VcsFormButton
         variant="filled"
         :disabled="disabled || resolution <= 0"
-        @click="startCalc"
+        @click="calculateHeightProfile"
       >
         {{ $t('heightProfile.results') }}
       </VcsFormButton>
     </div>
-    <v-dialog v-model="dialogVisible" max-width="500" persistent>
-      <v-card>
-        <div class="px-2 pt-2 pb-1">
-          <v-card-text>
-            {{ $t('heightProfile.dialogText') }}
-          </v-card-text>
-          <v-progress-linear :model-value="progressBar"></v-progress-linear>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <VcsFormButton color="primary" @click="cancelCalc">{{
-              $t('heightProfile.cancel')
-            }}</VcsFormButton>
-          </v-card-actions>
-        </div>
-      </v-card>
-    </v-dialog>
   </v-sheet>
 </template>
 <script lang="ts">
   import type { Ref } from 'vue';
   import { defineComponent, inject, onUnmounted, ref, onMounted } from 'vue';
-  import {
-    VCol,
-    VRow,
-    VSheet,
-    VDialog,
-    VCard,
-    VCardText,
-    VCardActions,
-    VProgressLinear,
-    VSpacer,
-  } from 'vuetify/components';
+  import { VCol, VRow, VSheet } from 'vuetify/components';
 
   import { v4 as uuidv4 } from 'uuid';
   import type {
@@ -93,6 +67,7 @@
     VcsSelect,
     VcsTextField,
     NotificationType,
+    addLoadingOverlay,
   } from '@vcmap/ui';
 
   import type { Collection } from '@vcmap/core';
@@ -116,23 +91,18 @@
   }
 
   export const windowIdSetParameter = 'heightProfileSetParameter_window_id';
+
   export default defineComponent({
     name: 'HeightProfileParameterComponent',
     components: {
       VSheet,
       VcsFormSection,
-      VDialog,
-      VCard,
       VcsFormButton,
-      VCardText,
-      VCardActions,
-      VProgressLinear,
       VRow,
       VCol,
       VcsLabel,
       VcsSelect,
       VcsTextField,
-      VSpacer,
     },
     props: {
       featureId: {
@@ -146,7 +116,6 @@
       const feature = plugin.layer.getFeatureById(featureId);
       const resolution = ref(1);
       const elevationType = ref('both') as Ref<ElevationType>;
-      const dialogVisible = ref(false);
       const progressBar = ref(0);
       const disabled = ref(!(app.maps.activeMap instanceof CesiumMap));
       const mapListener = app.maps.mapActivated.addEventListener((item) => {
@@ -183,7 +152,7 @@
         checkTerrain();
       });
 
-      function calculateHeightProfile(): () => void {
+      function calculateHeightProfile(): void {
         if (app.maps.activeMap instanceof CesiumMap) {
           const scene = app.maps.activeMap.getScene()!;
           const geometry = feature?.getGeometry() as LineString;
@@ -196,7 +165,11 @@
               scene,
               app,
             );
-          dialogVisible.value = true;
+          const removeLoadingOverlay = addLoadingOverlay(app, name, {
+            progress: progressBar,
+            title: 'heightProfile.dialogText',
+            cancel,
+          });
           progress.addEventListener((event) => {
             progressBar.value = event;
           });
@@ -225,11 +198,7 @@
 
                 const item: HeightProfileResult = {
                   name: collName,
-                  properties: {
-                    // title: `${String(app.vueI18n.t('heightProfile.profile'))}-${collection.size + 1}`,
-                    title,
-                  },
-
+                  properties: { title },
                   resolution: resolutionValue,
                   elevationType: elevationType.value,
                   layerNames,
@@ -255,7 +224,6 @@
                   });
                 }
               }
-              dialogVisible.value = false;
             })
             // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
             .catch((err) => {
@@ -263,27 +231,17 @@
                 type: NotificationType.ERROR,
                 message: String(err.message),
               });
-              dialogVisible.value = false;
-            });
-          return cancel;
+            })
+            .finally(removeLoadingOverlay);
         }
-        return () => {};
       }
 
-      let cancelFunc: () => void = () => {};
-      const startCalc = (): void => {
-        cancelFunc = calculateHeightProfile();
-      };
-
-      const cancelCalc = (): void => {
-        cancelFunc();
-      };
+      onMounted(() => {
+        checkTerrain();
+      });
       onUnmounted(() => {
         mapListener();
         layerListener();
-      });
-      onMounted(() => {
-        checkTerrain();
       });
 
       return {
@@ -291,10 +249,7 @@
         disabled,
         resolution,
         elevationType,
-        dialogVisible,
-        startCalc,
-        cancelCalc,
-        progressBar,
+        calculateHeightProfile,
         resolutionRule: (v: number): boolean | string =>
           v > 0 || 'heightProfile.resolutionError',
       };

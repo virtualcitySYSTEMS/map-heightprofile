@@ -96,7 +96,7 @@ export function createHeightProfileCalculation(
   } else if (totalNumberOfPoints <= 1) {
     app.notifier.add({
       type: NotificationType.WARNING,
-      message: String('heightProfile.resolutionProblem'),
+      message: 'heightProfile.resolutionProblem',
     });
   }
 
@@ -146,7 +146,7 @@ export function createHeightProfileCalculation(
         }
       }
 
-      progress.raiseEvent((i / totalNumberOfPoints) * 100);
+      progress.raiseEvent(i / totalNumberOfPoints);
 
       positions[i] = [
         CesiumMath.toDegrees(scratchCartographic.longitude),

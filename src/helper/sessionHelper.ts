@@ -123,7 +123,7 @@ export function createSessionReference(
 
           app.notifier.add({
             type: NotificationType.WARNING,
-            message: String('heightProfile.editSessionWarning'),
+            message: 'heightProfile.editSessionWarning',
           });
         }
         newSession.stopped.addEventListener(async () => {

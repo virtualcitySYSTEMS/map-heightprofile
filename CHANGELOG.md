@@ -1,3 +1,9 @@
+# v3.0.1
+
+- Updated apex charts to v3.54.1
+- Updated vure3-apexcharts to v1.7.0
+- Added optional nonce to charts
+
 # v3.0.0
 
 - Updated @vcmap/core and @vcmap/ui to version 6.2
